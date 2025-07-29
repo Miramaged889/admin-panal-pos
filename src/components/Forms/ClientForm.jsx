@@ -16,6 +16,17 @@ const ClientForm = ({ client, onClose }) => {
     phone: "",
     subscriptionStart: "",
     subscriptionEnd: "",
+    numberOfUsers: "",
+    subscriptionOptions: {
+      hetchin: true,
+      delivery: true,
+    },
+    manager: {
+      name: "",
+      nameEn: "",
+      email: "",
+      phone: "",
+    },
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +40,17 @@ const ClientForm = ({ client, onClose }) => {
         phone: client.phone || "",
         subscriptionStart: client.subscriptionStart || "",
         subscriptionEnd: client.subscriptionEnd || "",
+        numberOfUsers: client.numberOfUsers || "",
+        subscriptionOptions: client.subscriptionOptions || {
+          hetchin: true,
+          delivery: true,
+        },
+        manager: client.manager || {
+          name: "",
+          nameEn: "",
+          email: "",
+          phone: "",
+        },
       });
     }
   }, [client]);
@@ -60,6 +82,10 @@ const ClientForm = ({ client, onClose }) => {
 
     if (!formData.subscriptionEnd) {
       newErrors.subscriptionEnd = t(translations.required);
+    }
+
+    if (formData.numberOfUsers && isNaN(formData.numberOfUsers)) {
+      newErrors.numberOfUsers = t(translations.invalidNumber);
     }
 
     if (formData.subscriptionStart && formData.subscriptionEnd) {
@@ -127,6 +153,26 @@ const ClientForm = ({ client, onClose }) => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleSubscriptionOptionChange = (option) => {
+    setFormData((prev) => ({
+      ...prev,
+      subscriptionOptions: {
+        ...prev.subscriptionOptions,
+        [option]: !prev.subscriptionOptions[option],
+      },
+    }));
+  };
+
+  const handleManagerChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      manager: {
+        ...prev.manager,
+        [field]: value,
+      },
+    }));
   };
 
   return (
@@ -226,6 +272,31 @@ const ClientForm = ({ client, onClose }) => {
           )}
         </div>
 
+        {/* Number of Users */}
+        <div>
+          <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+            {t(translations.numberOfUsers)}
+          </label>
+          <input
+            type="number"
+            name="numberOfUsers"
+            value={formData.numberOfUsers}
+            onChange={handleChange}
+            className={`input-field ${
+              errors.numberOfUsers
+                ? "border-error-500 focus:ring-error-500"
+                : ""
+            }`}
+            placeholder={t(translations.numberOfUsers)}
+            min="0"
+          />
+          {errors.numberOfUsers && (
+            <p className="mt-1 text-sm text-error-600 dark:text-error-400">
+              {errors.numberOfUsers}
+            </p>
+          )}
+        </div>
+
         {/* Subscription Start Date */}
         <DatePicker
           label={t(translations.subscriptionStart)}
@@ -245,6 +316,114 @@ const ClientForm = ({ client, onClose }) => {
           error={errors.subscriptionEnd}
           min={formData.subscriptionStart || undefined}
         />
+      </div>
+
+      {/* Client Manager Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark">
+          {t(translations.clientManager)}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Manager Arabic Name */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+              {t(translations.managerNameAr)}
+            </label>
+            <input
+              type="text"
+              value={formData.manager.name}
+              onChange={(e) => handleManagerChange("name", e.target.value)}
+              className="input-field"
+              placeholder={t(translations.managerNameAr)}
+              dir="rtl"
+            />
+          </div>
+
+          {/* Manager English Name */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+              {t(translations.managerNameEn)}
+            </label>
+            <input
+              type="text"
+              value={formData.manager.nameEn}
+              onChange={(e) => handleManagerChange("nameEn", e.target.value)}
+              className="input-field"
+              placeholder={t(translations.managerNameEn)}
+              dir="ltr"
+            />
+          </div>
+
+          {/* Manager Email */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+              {t(translations.managerEmail)}
+            </label>
+            <input
+              type="email"
+              value={formData.manager.email}
+              onChange={(e) => handleManagerChange("email", e.target.value)}
+              className="input-field"
+              placeholder={t(translations.managerEmail)}
+              dir="ltr"
+            />
+          </div>
+
+          {/* Manager Phone */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+              {t(translations.managerPhone)}
+            </label>
+            <input
+              type="tel"
+              value={formData.manager.phone}
+              onChange={(e) => handleManagerChange("phone", e.target.value)}
+              className="input-field"
+              placeholder={t(translations.managerPhone)}
+              dir="ltr"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Subscription Options */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark">
+          {t(translations.subscriptionOptions)}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center space-x-3 p-4 border border-border-light dark:border-border-dark rounded-lg">
+            <input
+              type="checkbox"
+              id="hetchin"
+              checked={formData.subscriptionOptions.hetchin}
+              onChange={() => handleSubscriptionOptionChange("hetchin")}
+              className="w-4 h-4 text-primary-600 bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark rounded focus:ring-primary-500 focus:ring-2"
+            />
+            <label
+              htmlFor="hetchin"
+              className="text-sm font-medium text-text-primary-light dark:text-text-primary-dark cursor-pointer"
+            >
+              {t(translations.hetchin)}
+            </label>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 border border-border-light dark:border-border-dark rounded-lg">
+            <input
+              type="checkbox"
+              id="delivery"
+              checked={formData.subscriptionOptions.delivery}
+              onChange={() => handleSubscriptionOptionChange("delivery")}
+              className="w-4 h-4 text-primary-600 bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark rounded focus:ring-primary-500 focus:ring-2"
+            />
+            <label
+              htmlFor="delivery"
+              className="text-sm font-medium text-text-primary-light dark:text-text-primary-dark cursor-pointer"
+            >
+              {t(translations.delivery)}
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* Form Actions */}

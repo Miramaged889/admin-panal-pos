@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
-  Filter,
   Users,
   Building,
-  Mail,
   Phone,
   MoreVertical,
   Edit,
   Trash2,
   Eye,
+  Truck,
+  Package,
+  User,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
@@ -24,6 +25,7 @@ import { toast } from "../components/UI/Toast";
 const Clients = () => {
   const { t, isRTL } = useLanguage();
   const { clients, deleteClient } = useStore();
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -57,11 +59,20 @@ const Clients = () => {
     }
   };
 
-  const ClientCard = ({ client }) => {
-    const isExpired = new Date() > new Date(client.subscriptionEnd);
+  const handleCardClick = (clientId, event) => {
+    // Don't navigate if clicking on the dropdown or its items
+    if (event.target.closest(".dropdown-container")) {
+      return;
+    }
+    navigate(`/clients/${clientId}`);
+  };
 
+  const ClientCard = ({ client }) => {
     return (
-      <div className="card p-6 hover:shadow-lg transition-shadow duration-200">
+      <div
+        className="card p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+        onClick={(e) => handleCardClick(client.id, e)}
+      >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-r from-primary-600 to-purple-600 rounded-xl flex items-center justify-center">
@@ -78,13 +89,14 @@ const Clients = () => {
           </div>
 
           {/* Actions Dropdown */}
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 setActiveDropdown(
                   activeDropdown === client.id ? null : client.id
-                )
-              }
+                );
+              }}
               className="p-2 rounded-lg hover:bg-surface-light dark:hover:bg-surface-dark transition-colors"
             >
               <MoreVertical className="w-5 h-5" />
@@ -138,6 +150,52 @@ const Clients = () => {
           <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
             <Building className="w-4 h-4" />
             {client.branches.length} {t(translations.branches)}
+          </div>
+
+          {/* Number of Users */}
+          {client.numberOfUsers && (
+            <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              <Users className="w-4 h-4" />
+              {client.numberOfUsers} {t(translations.users)}
+            </div>
+          )}
+
+          {/* Client Manager */}
+          {client.manager?.name && (
+            <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              <User className="w-4 h-4" />
+              {isRTL
+                ? client.manager.name
+                : client.manager.nameEn || client.manager.name}
+            </div>
+          )}
+
+          {/* Subscription Options */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1">
+              <Package className="w-4 h-4 text-primary-600" />
+              <span
+                className={
+                  client.subscriptionOptions?.hetchin
+                    ? "text-success-600"
+                    : "text-text-muted-light dark:text-text-muted-dark"
+                }
+              >
+                {t(translations.hetchin)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Truck className="w-4 h-4 text-primary-600" />
+              <span
+                className={
+                  client.subscriptionOptions?.delivery
+                    ? "text-success-600"
+                    : "text-text-muted-light dark:text-text-muted-dark"
+                }
+              >
+                {t(translations.delivery)}
+              </span>
+            </div>
           </div>
 
           <SubscriptionStatus client={client} showDetails />

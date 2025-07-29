@@ -5,13 +5,15 @@ import {
   Plus,
   Building,
   MapPin,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  Package,
+  Truck,
+  Users,
   User,
   Mail,
   Phone,
-  Edit,
-  Trash2,
-  Calendar,
-  AlertTriangle,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
@@ -19,7 +21,6 @@ import useStore from "../store/useStore";
 import Modal from "../components/UI/Modal";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 import BranchForm from "../components/Forms/BranchForm";
-import ManagerForm from "../components/Forms/ManagerForm";
 import { toast } from "../components/UI/Toast";
 
 const ClientDetails = () => {
@@ -30,7 +31,6 @@ const ClientDetails = () => {
 
   const [isAddBranchModalOpen, setIsAddBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
-  const [editingManager, setEditingManager] = useState(null);
   const [deletingBranch, setDeletingBranch] = useState(null);
 
   const client = getClient(id);
@@ -76,10 +76,12 @@ const ClientDetails = () => {
             <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
               {isRTL ? branch.name : branch.nameEn || branch.name}
             </h3>
-            <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
-              <MapPin className="w-4 h-4" />
-              {isRTL ? branch.location : branch.locationEn || branch.location}
-            </div>
+            {branch.location && (
+              <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                <MapPin className="w-4 h-4" />
+                {isRTL ? branch.location : branch.locationEn || branch.location}
+              </div>
+            )}
           </div>
         </div>
 
@@ -99,54 +101,6 @@ const ClientDetails = () => {
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
-      </div>
-
-      {/* Manager Info */}
-      <div className="border-t border-border-light dark:border-border-dark pt-4">
-        <div className="flex items-center justify-between">
-          <h4 className="font-medium text-text-primary-light dark:text-text-primary-dark mb-3">
-            {t(translations.branchManager)}
-          </h4>
-          <button
-            onClick={() =>
-              setEditingManager({
-                branchId: branch.id,
-                manager: branch.manager,
-                branch,
-              })
-            }
-            className="text-sm text-primary-600 hover:text-primary-700 transition-colors"
-          >
-            {branch.manager
-              ? t(translations.editManager)
-              : t(translations.assignManager)}
-          </button>
-        </div>
-
-        {branch.manager ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
-              <span className="text-sm">
-                {isRTL
-                  ? branch.manager.name
-                  : branch.manager.nameEn || branch.manager.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
-              <span className="text-sm">{branch.manager.email}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
-              <span className="text-sm">{branch.manager.phone}</span>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-            {t(translations.noManager)}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -211,6 +165,16 @@ const ClientDetails = () => {
                   {client.phone}
                 </p>
               </div>
+              {client.numberOfUsers && (
+                <div>
+                  <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                    {t(translations.numberOfUsers)}
+                  </label>
+                  <p className="text-text-primary-light dark:text-text-primary-dark">
+                    {client.numberOfUsers} {t(translations.users)}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -219,6 +183,39 @@ const ClientDetails = () => {
               {t(translations.subscription)}
             </h2>
             <SubscriptionStatus client={client} showDetails />
+
+            {/* Subscription Options */}
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-2">
+                {t(translations.subscriptionOptions)}
+              </h3>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary-600" />
+                  <span
+                    className={`text-sm ${
+                      client.subscriptionOptions?.hetchin
+                        ? "text-success-600 font-medium"
+                        : "text-text-muted-light dark:text-text-muted-dark"
+                    }`}
+                  >
+                    {t(translations.hetchin)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-primary-600" />
+                  <span
+                    className={`text-sm ${
+                      client.subscriptionOptions?.delivery
+                        ? "text-success-600 font-medium"
+                        : "text-text-muted-light dark:text-text-muted-dark"
+                    }`}
+                  >
+                    {t(translations.delivery)}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {isExpired && (
               <div className="mt-4 p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-lg">
@@ -239,6 +236,53 @@ const ClientDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Client Manager Card */}
+      {client.manager?.name && (
+        <div className="card p-6">
+          <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
+            {t(translations.clientManager)}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                  {t(translations.managerNameAr)}
+                </label>
+                <p className="text-text-primary-light dark:text-text-primary-dark">
+                  {client.manager.name}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                  {t(translations.managerNameEn)}
+                </label>
+                <p className="text-text-primary-light dark:text-text-primary-dark">
+                  {client.manager.nameEn}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                  {t(translations.managerEmail)}
+                </label>
+                <p className="text-text-primary-light dark:text-text-primary-dark">
+                  {client.manager.email}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                  {t(translations.managerPhone)}
+                </label>
+                <p className="text-text-primary-light dark:text-text-primary-dark">
+                  {client.manager.phone}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Branches Section */}
       <div>
@@ -303,28 +347,6 @@ const ClientDetails = () => {
             setEditingBranch(null);
           }}
         />
-      </Modal>
-
-      {/* Edit Manager Modal */}
-      <Modal
-        isOpen={!!editingManager}
-        onClose={() => setEditingManager(null)}
-        title={
-          editingManager?.manager
-            ? t(translations.editManager)
-            : t(translations.assignManager)
-        }
-        size="lg"
-      >
-        {editingManager && (
-          <ManagerForm
-            clientId={client.id}
-            branchId={editingManager.branchId}
-            manager={editingManager.manager}
-            branch={editingManager.branch}
-            onClose={() => setEditingManager(null)}
-          />
-        )}
       </Modal>
 
       {/* Delete Branch Confirmation Modal */}

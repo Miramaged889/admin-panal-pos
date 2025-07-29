@@ -5,7 +5,6 @@ import {
   Sun,
   Globe,
   Bell,
-  Shield,
   Database,
   User,
   Palette,
@@ -14,9 +13,6 @@ import {
   Trash2,
   Download,
   Upload,
-  Eye,
-  EyeOff,
-  Key,
   Mail,
   Phone,
 } from "lucide-react";
@@ -32,12 +28,7 @@ const Settings = () => {
   const { user } = useStore();
 
   const [activeTab, setActiveTab] = useState("general");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
     email: user?.email || "",
     phone: user?.phone || "",
     notifications: {
@@ -69,24 +60,11 @@ const Settings = () => {
       icon: Bell,
     },
     {
-      id: "security",
-      label: t({ en: "Security", ar: "الأمان" }),
-      icon: Shield,
-    },
-    {
       id: "data",
       label: t({ en: "Data & Backup", ar: "البيانات والنسخ الاحتياطي" }),
       icon: Database,
     },
   ];
-
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const handleNotificationChange = (type) => {
     setFormData((prev) => ({
@@ -94,16 +72,6 @@ const Settings = () => {
       notifications: {
         ...prev.notifications,
         [type]: !prev.notifications[type],
-      },
-    }));
-  };
-
-  const handlePrivacyChange = (type) => {
-    setFormData((prev) => ({
-      ...prev,
-      privacy: {
-        ...prev.privacy,
-        [type]: !prev.privacy[type],
       },
     }));
   };
@@ -251,36 +219,6 @@ const Settings = () => {
                 </div>
               </div>
             </div>
-
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Display Options", ar: "خيارات العرض" })}
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    {t({ en: "Show animations", ar: "إظهار الرسوم المتحركة" })}
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    {t({ en: "Compact sidebar", ar: "شريط جانبي مضغوط" })}
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
           </div>
         );
 
@@ -344,131 +282,6 @@ const Settings = () => {
                       type="checkbox"
                       checked={formData.notifications.sms}
                       onChange={() => handleNotificationChange("sms")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "security":
-        return (
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Change Password", ar: "تغيير كلمة المرور" })}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t({ en: "Current Password", ar: "كلمة المرور الحالية" })}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="currentPassword"
-                      value={formData.currentPassword}
-                      onChange={handlePasswordChange}
-                      className="input-field pr-10"
-                      dir="ltr"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t({ en: "New Password", ar: "كلمة المرور الجديدة" })}
-                  </label>
-                  <input
-                    type="password"
-                    name="newPassword"
-                    value={formData.newPassword}
-                    onChange={handlePasswordChange}
-                    className="input-field"
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t({
-                      en: "Confirm New Password",
-                      ar: "تأكيد كلمة المرور الجديدة",
-                    })}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handlePasswordChange}
-                      className="input-field pr-10"
-                      dir="ltr"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <button className="btn-primary">
-                  {t({ en: "Update Password", ar: "تحديث كلمة المرور" })}
-                </button>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Privacy Settings", ar: "إعدادات الخصوصية" })}
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    {t({
-                      en: "Allow data sharing",
-                      ar: "السماح بمشاركة البيانات",
-                    })}
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.privacy.dataSharing}
-                      onChange={() => handlePrivacyChange("dataSharing")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    {t({ en: "Analytics tracking", ar: "تتبع التحليلات" })}
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.privacy.analytics}
-                      onChange={() => handlePrivacyChange("analytics")}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>

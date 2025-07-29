@@ -3,7 +3,6 @@ export const translations = {
   dashboard: { en: "Dashboard", ar: "لوحة التحكم" },
   clients: { en: "Clients", ar: "العملاء" },
   branches: { en: "Branches", ar: "الفروع" },
-  managers: { en: "Managers", ar: "المدراء" },
   settings: { en: "Settings", ar: "الإعدادات" },
   logout: { en: "Logout", ar: "تسجيل الخروج" },
 
@@ -38,12 +37,34 @@ export const translations = {
   subscriptionPeriod: { en: "Subscription Period", ar: "فترة الاشتراك" },
   subscriptionStart: { en: "Start Date", ar: "تاريخ البداية" },
   subscriptionEnd: { en: "End Date", ar: "تاريخ الانتهاء" },
+  subscriptionOptions: { en: "Subscription Options", ar: "خيارات الاشتراك" },
+  hetchin: { en: "Hetchin", ar: "حتشين" },
+  delivery: { en: "Delivery", ar: "توصيل" },
   subscriptionExpired: {
     en: "Subscription Expired",
     ar: "انتهت صلاحية الاشتراك",
   },
   subscriptionActive: { en: "Active", ar: "نشط" },
   subscriptionExpiring: { en: "Expiring Soon", ar: "ينتهي قريباً" },
+
+  // Client Manager
+  clientManager: { en: "Client Manager", ar: "مدير العميل" },
+  managerName: { en: "Manager Name", ar: "اسم المدير" },
+  managerNameEn: {
+    en: "Manager Name (English)",
+    ar: "اسم المدير (بالإنجليزية)",
+  },
+  managerNameAr: { en: "Manager Name (Arabic)", ar: "اسم المدير (بالعربية)" },
+  managerEmail: { en: "Manager Email", ar: "بريد المدير الإلكتروني" },
+  managerPhone: { en: "Manager Phone", ar: "هاتف المدير" },
+  addManager: { en: "Add Manager", ar: "إضافة مدير" },
+  editManager: { en: "Edit Manager", ar: "تعديل المدير" },
+  noManager: { en: "No manager assigned", ar: "لم يتم تعيين مدير" },
+
+  // Number of Users
+  numberOfUsers: { en: "Number of Users", ar: "عدد المستخدمين" },
+  users: { en: "Users", ar: "المستخدمين" },
+  totalUsers: { en: "Total Users", ar: "إجمالي المستخدمين" },
 
   // Branches
   branchName: { en: "Branch Name", ar: "اسم الفرع" },
@@ -55,22 +76,7 @@ export const translations = {
   addBranch: { en: "Add Branch", ar: "إضافة فرع" },
   editBranch: { en: "Edit Branch", ar: "تعديل الفرع" },
   deleteBranch: { en: "Delete Branch", ar: "حذف الفرع" },
-  branchManager: { en: "Branch Manager", ar: "مدير الفرع" },
   noBranches: { en: "No branches added yet", ar: "لم يتم إضافة أي فروع بعد" },
-
-  // Managers
-  managerName: { en: "Manager Name", ar: "اسم المدير" },
-  managerNameEn: {
-    en: "Manager Name (English)",
-    ar: "اسم المدير (بالإنجليزية)",
-  },
-  managerNameAr: { en: "Manager Name (Arabic)", ar: "اسم المدير (بالعربية)" },
-  managerEmail: { en: "Manager Email", ar: "بريد المدير الإلكتروني" },
-  managerPhone: { en: "Manager Phone", ar: "هاتف المدير" },
-  addManager: { en: "Add Manager", ar: "إضافة مدير" },
-  editManager: { en: "Edit Manager", ar: "تعديل المدير" },
-  assignManager: { en: "Assign Manager", ar: "تعيين مدير" },
-  noManager: { en: "No manager assigned", ar: "لم يتم تعيين مدير" },
 
   // Common Actions
   add: { en: "Add", ar: "إضافة" },
@@ -103,6 +109,10 @@ export const translations = {
   invalidPhone: {
     en: "Please enter a valid phone number",
     ar: "يرجى إدخال رقم هاتف صحيح",
+  },
+  invalidNumber: {
+    en: "Please enter a valid number",
+    ar: "يرجى إدخال رقم صحيح",
   },
   passwordTooShort: {
     en: "Password must be at least 6 characters",

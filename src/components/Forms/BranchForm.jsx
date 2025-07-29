@@ -39,13 +39,7 @@ const BranchForm = ({ clientId, branch, onClose }) => {
       newErrors.nameEn = t(translations.required);
     }
 
-    if (!formData.location.trim()) {
-      newErrors.location = t(translations.required);
-    }
-
-    if (!formData.locationEn.trim()) {
-      newErrors.locationEn = t(translations.required);
-    }
+    // Location fields are now optional - no validation required
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -136,52 +130,36 @@ const BranchForm = ({ clientId, branch, onClose }) => {
           )}
         </div>
 
-        {/* Arabic Location */}
+        {/* Arabic Location - Optional */}
         <div>
           <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-            {t(translations.locationAr)}{" "}
-            <span className="text-error-500">*</span>
+            {t(translations.locationAr)}
           </label>
           <input
             type="text"
             name="location"
             value={formData.location}
             onChange={handleChange}
-            className={`input-field ${
-              errors.location ? "border-error-500 focus:ring-error-500" : ""
-            }`}
+            className="input-field"
             placeholder={t(translations.locationAr)}
             dir="rtl"
           />
-          {errors.location && (
-            <p className="mt-1 text-sm text-error-600 dark:text-error-400">
-              {errors.location}
-            </p>
-          )}
         </div>
 
-        {/* English Location */}
+        {/* English Location - Optional */}
         <div>
           <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-            {t(translations.locationEn)}{" "}
-            <span className="text-error-500">*</span>
+            {t(translations.locationEn)}
           </label>
           <input
             type="text"
             name="locationEn"
             value={formData.locationEn}
             onChange={handleChange}
-            className={`input-field ${
-              errors.locationEn ? "border-error-500 focus:ring-error-500" : ""
-            }`}
+            className="input-field"
             placeholder={t(translations.locationEn)}
             dir="ltr"
           />
-          {errors.locationEn && (
-            <p className="mt-1 text-sm text-error-600 dark:text-error-400">
-              {errors.locationEn}
-            </p>
-          )}
         </div>
       </div>
 

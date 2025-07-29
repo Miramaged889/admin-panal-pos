@@ -30,6 +30,11 @@ const Dashboard = () => {
     0
   );
 
+  const totalUsers = clients.reduce(
+    (sum, client) => sum + (parseInt(client.numberOfUsers) || 0),
+    0
+  );
+
   const expiringSoonClients = clients.filter((client) => {
     const daysUntilExpiry = Math.ceil(
       (new Date(client.subscriptionEnd) - new Date()) / (1000 * 60 * 60 * 24)
@@ -70,6 +75,14 @@ const Dashboard = () => {
       bgColor: "bg-purple-50 dark:bg-purple-900/20",
       textColor: "text-purple-600 dark:text-purple-400",
     },
+    {
+      title: t(translations.totalUsers),
+      value: totalUsers,
+      icon: Users,
+      color: "bg-blue-500",
+      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      textColor: "text-blue-600 dark:text-blue-400",
+    },
   ];
 
   return (
@@ -85,26 +98,27 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => {
-          const Icon = stat.icon;
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {statsCards.map((card, index) => {
+          const Icon = card.icon;
           return (
             <div
               key={index}
-              className="card p-6 animate-fade-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="card p-6 hover:shadow-lg transition-shadow duration-200"
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                    {stat.title}
+                    {card.title}
                   </p>
-                  <p className="text-3xl font-bold text-text-primary-light dark:text-text-primary-dark mt-2">
-                    {stat.value}
+                  <p className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
+                    {card.value}
                   </p>
                 </div>
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`w-6 h-6 ${stat.textColor}`} />
+                <div
+                  className={`w-12 h-12 rounded-lg flex items-center justify-center ${card.bgColor}`}
+                >
+                  <Icon className={`w-6 h-6 ${card.textColor}`} />
                 </div>
               </div>
             </div>
@@ -170,7 +184,8 @@ const Dashboard = () => {
                       {client.name}
                     </h3>
                     <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                      {client.branches.length} {t(translations.branches)}
+                      {client.branches.length} {t(translations.branches)} •{" "}
+                      {client.numberOfUsers || 0} {t(translations.users)}
                     </p>
                   </div>
                 </div>
@@ -186,46 +201,33 @@ const Dashboard = () => {
         <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
           {t({ en: "Quick Actions", ar: "إجراءات سريعة" })}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="btn-primary p-4 text-left">
-            <Users className="w-6 h-6 mb-2" />
-            <div>
-              <h3 className="font-medium">{t(translations.addClient)}</h3>
-              <p className="text-sm opacity-90">
-                {t({
-                  en: "Add a new client to the system",
-                  ar: "إضافة عميل جديد للنظام",
-                })}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button
+            onClick={() => (window.location.href = "/clients")}
+            className="flex items-center gap-3 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+          >
+            <Users className="w-6 h-6 text-primary-600" />
+            <div className="text-left">
+              <h3 className="font-medium text-text-primary-light dark:text-text-primary-dark">
+                {t(translations.clients)}
+              </h3>
+              <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Manage clients", ar: "إدارة العملاء" })}
               </p>
             </div>
           </button>
 
-          <button className="btn-secondary p-4 text-left">
-            <Building className="w-6 h-6 mb-2" />
-            <div>
-              <h3 className="font-medium">
-                {t({ en: "Manage Branches", ar: "إدارة الفروع" })}
+          <button
+            onClick={() => (window.location.href = "/settings")}
+            className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+          >
+            <Calendar className="w-6 h-6 text-purple-600" />
+            <div className="text-left">
+              <h3 className="font-medium text-text-primary-light dark:text-text-primary-dark">
+                {t(translations.settings)}
               </h3>
-              <p className="text-sm opacity-75">
-                {t({
-                  en: "View and manage all branches",
-                  ar: "عرض وإدارة جميع الفروع",
-                })}
-              </p>
-            </div>
-          </button>
-
-          <button className="btn-secondary p-4 text-left">
-            <Calendar className="w-6 h-6 mb-2" />
-            <div>
-              <h3 className="font-medium">
-                {t({ en: "Subscription Reports", ar: "تقارير الاشتراكات" })}
-              </h3>
-              <p className="text-sm opacity-75">
-                {t({
-                  en: "View subscription analytics",
-                  ar: "عرض تحليلات الاشتراكات",
-                })}
+              <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "System settings", ar: "إعدادات النظام" })}
               </p>
             </div>
           </button>

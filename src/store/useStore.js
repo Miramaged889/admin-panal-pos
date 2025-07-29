@@ -19,6 +19,17 @@ const useStore = create(
           subscriptionStart: "2024-01-01",
           subscriptionEnd: "2024-12-31",
           status: "active",
+          numberOfUsers: "25",
+          subscriptionOptions: {
+            hetchin: true,
+            delivery: true,
+          },
+          manager: {
+            name: "أحمد محمد",
+            nameEn: "Ahmed Mohammed",
+            email: "ahmed@smartbusiness.com",
+            phone: "+966501234568",
+          },
           branches: [
             {
               id: "b1",
@@ -26,14 +37,6 @@ const useStore = create(
               nameEn: "Main Branch",
               location: "الرياض، السعودية",
               locationEn: "Riyadh, Saudi Arabia",
-              manager: {
-                id: "m1",
-                name: "أحمد محمد",
-                nameEn: "Ahmed Mohammed",
-                email: "ahmed@smartbusiness.com",
-                phone: "+966501234568",
-                role: "branch_manager",
-              },
             },
             {
               id: "b2",
@@ -41,14 +44,6 @@ const useStore = create(
               nameEn: "Jeddah Branch",
               location: "جدة، السعودية",
               locationEn: "Jeddah, Saudi Arabia",
-              manager: {
-                id: "m2",
-                name: "فاطمة أحمد",
-                nameEn: "Fatima Ahmed",
-                email: "fatima@smartbusiness.com",
-                phone: "+966501234569",
-                role: "branch_manager",
-              },
             },
           ],
         },
@@ -61,6 +56,17 @@ const useStore = create(
           subscriptionStart: "2024-03-01",
           subscriptionEnd: "2024-03-30", // Expired subscription
           status: "expired",
+          numberOfUsers: "15",
+          subscriptionOptions: {
+            hetchin: true,
+            delivery: false,
+          },
+          manager: {
+            name: "خالد العبدالله",
+            nameEn: "Khalid Al-Abdullah",
+            email: "khalid@advancedtech.com",
+            phone: "+966507654322",
+          },
           branches: [
             {
               id: "b3",
@@ -68,14 +74,6 @@ const useStore = create(
               nameEn: "Headquarters",
               location: "الدمام، السعودية",
               locationEn: "Dammam, Saudi Arabia",
-              manager: {
-                id: "m3",
-                name: "خالد العبدالله",
-                nameEn: "Khalid Al-Abdullah",
-                email: "khalid@advancedtech.com",
-                phone: "+966507654322",
-                role: "branch_manager",
-              },
             },
           ],
         },
@@ -91,6 +89,18 @@ const useStore = create(
           ...client,
           id: Date.now().toString(),
           status: "active",
+          numberOfUsers: client.numberOfUsers || "",
+          subscriptionOptions: {
+            hetchin: true,
+            delivery: true,
+            ...client.subscriptionOptions,
+          },
+          manager: client.manager || {
+            name: "",
+            nameEn: "",
+            email: "",
+            phone: "",
+          },
           branches: [],
         };
         set((state) => ({
@@ -150,30 +160,6 @@ const useStore = create(
                   ...client,
                   branches: client.branches.filter(
                     (branch) => branch.id !== branchId
-                  ),
-                }
-              : client
-          ),
-        }));
-      },
-
-      // Manager actions
-      updateManager: (clientId, branchId, manager) => {
-        set((state) => ({
-          clients: state.clients.map((client) =>
-            client.id === clientId
-              ? {
-                  ...client,
-                  branches: client.branches.map((branch) =>
-                    branch.id === branchId
-                      ? {
-                          ...branch,
-                          manager: {
-                            ...manager,
-                            id: manager.id || Date.now().toString(),
-                          },
-                        }
-                      : branch
                   ),
                 }
               : client
