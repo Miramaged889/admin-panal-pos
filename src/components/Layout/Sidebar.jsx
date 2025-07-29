@@ -17,9 +17,8 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { translations } from "../../constants/translations";
 import useStore from "../../store/useStore";
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
@@ -59,18 +58,6 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
         <div className={`flex items-center gap-3 ${isRTL ? "flex-row" : ""}`}>
-          {/* Mobile Toggle Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden w-10 h-10 bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg flex items-center justify-center"
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-white" />
-            ) : (
-              <Building className="w-6 h-6 text-white" />
-            )}
-          </button>
-
           {!isCollapsed && (
             <div className={isRTL ? "text-right" : "text-left"}>
               <h1 className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
@@ -195,7 +182,7 @@ const Sidebar = () => {
           />
           <div
             className={`relative w-80 max-w-[80vw] bg-card-light dark:bg-card-dark ${
-              isRTL ? "mr-auto" : "ml-auto"
+              isRTL ? "mr-0" : "ml-0"
             }`}
           >
             <div className="h-full">

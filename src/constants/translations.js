@@ -5,7 +5,7 @@ export const translations = {
   branches: { en: "Branches", ar: "الفروع" },
   settings: { en: "Settings", ar: "الإعدادات" },
   logout: { en: "Logout", ar: "تسجيل الخروج" },
-
+  adminPanel: { en: "Admin Panel", ar: "لوحة الإدارة" },
   // Authentication
   login: { en: "Login", ar: "تسجيل الدخول" },
   email: { en: "Email", ar: "البريد الإلكتروني" },
