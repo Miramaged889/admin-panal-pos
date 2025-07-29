@@ -38,7 +38,7 @@ export const translations = {
   subscriptionStart: { en: "Start Date", ar: "تاريخ البداية" },
   subscriptionEnd: { en: "End Date", ar: "تاريخ الانتهاء" },
   subscriptionOptions: { en: "Subscription Options", ar: "خيارات الاشتراك" },
-  hetchin: { en: "Hetchin", ar: "حتشين" },
+  ketchin: { en: "Ketchin", ar: "المطبخ"},
   delivery: { en: "Delivery", ar: "توصيل" },
   subscriptionExpired: {
     en: "Subscription Expired",

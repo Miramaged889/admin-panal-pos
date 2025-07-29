@@ -194,12 +194,12 @@ const ClientDetails = () => {
                   <Package className="w-4 h-4 text-primary-600" />
                   <span
                     className={`text-sm ${
-                      client.subscriptionOptions?.hetchin
+                      client.subscriptionOptions?.ketchin
                         ? "text-success-600 font-medium"
                         : "text-text-muted-light dark:text-text-muted-dark"
                     }`}
                   >
-                    {t(translations.hetchin)}
+                    {t(translations.ketchin)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

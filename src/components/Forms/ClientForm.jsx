@@ -18,7 +18,7 @@ const ClientForm = ({ client, onClose }) => {
     subscriptionEnd: "",
     numberOfUsers: "",
     subscriptionOptions: {
-      hetchin: true,
+      ketchin: true,
       delivery: true,
     },
     manager: {
@@ -42,7 +42,7 @@ const ClientForm = ({ client, onClose }) => {
         subscriptionEnd: client.subscriptionEnd || "",
         numberOfUsers: client.numberOfUsers || "",
         subscriptionOptions: client.subscriptionOptions || {
-          hetchin: true,
+          ketchin: true,
           delivery: true,
         },
         manager: client.manager || {
@@ -395,16 +395,16 @@ const ClientForm = ({ client, onClose }) => {
           <div className="flex items-center space-x-3 p-4 border border-border-light dark:border-border-dark rounded-lg">
             <input
               type="checkbox"
-              id="hetchin"
-              checked={formData.subscriptionOptions.hetchin}
-              onChange={() => handleSubscriptionOptionChange("hetchin")}
+              id="ketchin"
+              checked={formData.subscriptionOptions.ketchin}
+              onChange={() => handleSubscriptionOptionChange("ketchin")}
               className="w-4 h-4 text-primary-600 bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark rounded focus:ring-primary-500 focus:ring-2"
             />
             <label
-              htmlFor="hetchin"
+              htmlFor="ketchin"
               className="text-sm font-medium text-text-primary-light dark:text-text-primary-dark cursor-pointer"
             >
-              {t(translations.hetchin)}
+              {t(translations.ketchin)}
             </label>
           </div>
 

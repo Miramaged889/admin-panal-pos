@@ -29,7 +29,20 @@ export const LanguageProvider = ({ children }) => {
   };
 
   const t = (translations) => {
-    return translations[language] || translations.en || "";
+    if (!translations) {
+      console.warn("Translation key is undefined");
+      return "";
+    }
+
+    if (typeof translations === "string") {
+      return translations;
+    }
+
+    if (typeof translations === "object" && translations !== null) {
+      return translations[language] || translations.en || translations.ar || "";
+    }
+
+    return "";
   };
 
   return (
