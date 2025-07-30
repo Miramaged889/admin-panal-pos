@@ -38,8 +38,9 @@ export const translations = {
   subscriptionStart: { en: "Start Date", ar: "تاريخ البداية" },
   subscriptionEnd: { en: "End Date", ar: "تاريخ الانتهاء" },
   subscriptionOptions: { en: "Subscription Options", ar: "خيارات الاشتراك" },
-  ketchin: { en: "Ketchin", ar: "المطبخ"},
+  ketchin: { en: "Ketchin", ar: "المطبخ" },
   delivery: { en: "Delivery", ar: "توصيل" },
+  freeTrial: { en: "Free Trial", ar: "تجربة مجانية" },
   subscriptionExpired: {
     en: "Subscription Expired",
     ar: "انتهت صلاحية الاشتراك",
