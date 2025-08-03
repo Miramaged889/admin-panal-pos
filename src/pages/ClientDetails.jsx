@@ -194,37 +194,62 @@ const ClientDetails = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Company License", ar: "ترخيص الشركة" })}
+                  {t({ en: "Activity Type", ar: "نوع النشاط" })}
                 </label>
                 <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.companyLicense}
+                  {client.companyActivityType === "cafe" &&
+                    t({ en: "Cafe", ar: "مقهى" })}
+                  {client.companyActivityType === "restaurant" &&
+                    t({ en: "Restaurant", ar: "مطعم" })}
+                  {client.companyActivityType === "catering" &&
+                    t({ en: "Catering", ar: "خدمات الطعام" })}
+                  {client.companyActivityType === "other" && (
+                    <span>
+                      {t({ en: "Other", ar: "أخرى" })}:{" "}
+                      {client.otherActivityType}
+                    </span>
+                  )}
                 </p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Company Status", ar: "حالة الشركة" })}
-                </label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      client.companyStatus === "active"
-                        ? "bg-success-500"
-                        : "bg-error-500"
-                    }`}
-                  />
-                  <span
-                    className={`text-sm font-medium ${
-                      client.companyStatus === "active"
-                        ? "text-success-600"
-                        : "text-error-600"
-                    }`}
-                  >
-                    {client.companyStatus === "active"
-                      ? t({ en: "Active", ar: "نشط" })
-                      : t({ en: "Inactive", ar: "غير نشط" })}
-                  </span>
+              {/* Legacy Company License (for backward compatibility) */}
+              {client.companyLicense && (
+                <div>
+                  <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                    {t({ en: "Company License", ar: "ترخيص الشركة" })}
+                  </label>
+                  <p className="text-text-primary-light dark:text-text-primary-dark">
+                    {client.companyLicense}
+                  </p>
                 </div>
-              </div>
+              )}
+              {/* Legacy Company Status (for backward compatibility) */}
+              {client.companyStatus && (
+                <div>
+                  <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                    {t({ en: "Company Status", ar: "حالة الشركة" })}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        client.companyStatus === "active"
+                          ? "bg-success-500"
+                          : "bg-error-500"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm font-medium ${
+                        client.companyStatus === "active"
+                          ? "text-success-600"
+                          : "text-error-600"
+                      }`}
+                    >
+                      {client.companyStatus === "active"
+                        ? t({ en: "Active", ar: "نشط" })
+                        : t({ en: "Inactive", ar: "غير نشط" })}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -294,22 +319,35 @@ const ClientDetails = () => {
 
             {/* Enhanced Subscription Details */}
             <div className="mt-4 space-y-3">
-              {client.trialDays && (
+              {/* Free Trial Status */}
+              {client.isFreeTrial && (
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Trial Period", ar: "فترة التجربة" })}:{" "}
-                    {client.trialDays} {t({ en: "days", ar: "أيام" })}
+                  <Calendar className="w-4 h-4 text-success-600" />
+                  <span className="text-sm text-success-600 font-medium">
+                    {t(translations.freeTrial)} (14{" "}
+                    {t({ en: "days", ar: "أيام" })})
                   </span>
                 </div>
               )}
 
+              {/* Subscription Price */}
               {client.subscriptionPrice && (
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-primary-600" />
                   <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
                     {t({ en: "Price", ar: "السعر" })}:{" "}
                     {formatCurrency(client.subscriptionPrice, client.currency)}
+                  </span>
+                </div>
+              )}
+
+              {/* Legacy Trial Days (for backward compatibility) */}
+              {client.trialDays && !client.isFreeTrial && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                    {t({ en: "Trial Period", ar: "فترة التجربة" })}:{" "}
+                    {client.trialDays} {t({ en: "days", ar: "أيام" })}
                   </span>
                 </div>
               )}

@@ -11,6 +11,7 @@ import {
   Moon,
   Sun,
   Globe,
+  MessageSquare,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -39,6 +40,12 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       active:
         location.pathname === "/clients" ||
         location.pathname.startsWith("/clients/"),
+    },
+    {
+      icon: MessageSquare,
+      label: t({ en: "Contact Us", ar: "اتصل بنا" }),
+      path: "/contact",
+      active: location.pathname === "/contact",
     },
     {
       icon: Settings,

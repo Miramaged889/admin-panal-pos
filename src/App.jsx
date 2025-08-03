@@ -18,6 +18,7 @@ import Clients from "./pages/Clients";
 import ClientDetails from "./pages/ClientDetails";
 import SubscriptionExpired from "./pages/SubscriptionExpired";
 import Settings from "./pages/Settings";
+import ContactUs from "./pages/ContactUs";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -65,7 +66,8 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="clients" element={<Clients />} />
               <Route path="clients/:id" element={<ClientDetails />} />
-              <Route path="settings" element={<Settings />} />  
+              <Route path="contact" element={<ContactUs />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* Catch all route */}

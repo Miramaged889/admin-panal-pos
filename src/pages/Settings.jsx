@@ -230,15 +230,23 @@ const Settings = () => {
                 {t({ en: "Notification Preferences", ar: "تفضيلات الإشعارات" })}
               </h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-primary-600" />
-                    <span className="text-text-primary-light dark:text-text-primary-dark">
-                      {t({
-                        en: "Email notifications",
-                        ar: "إشعارات البريد الإلكتروني",
-                      })}
-                    </span>
+                    <div>
+                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">
+                        {t({
+                          en: "Email notifications",
+                          ar: "إشعارات البريد الإلكتروني",
+                        })}
+                      </span>
+                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({
+                          en: "Receive notifications via email",
+                          ar: "استلام الإشعارات عبر البريد الإلكتروني",
+                        })}
+                      </p>
+                    </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -247,15 +255,26 @@ const Settings = () => {
                       onChange={() => handleNotificationChange("email")}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
                   <div className="flex items-center gap-3">
                     <Bell className="w-5 h-5 text-primary-600" />
-                    <span className="text-text-primary-light dark:text-text-primary-dark">
-                      {t({ en: "Push notifications", ar: "الإشعارات الفورية" })}
-                    </span>
+                    <div>
+                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">
+                        {t({
+                          en: "Push notifications",
+                          ar: "الإشعارات الفورية",
+                        })}
+                      </span>
+                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({
+                          en: "Receive instant notifications",
+                          ar: "استلام الإشعارات الفورية",
+                        })}
+                      </p>
+                    </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -264,18 +283,26 @@ const Settings = () => {
                       onChange={() => handleNotificationChange("push")}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-primary-600" />
-                    <span className="text-text-primary-light dark:text-text-primary-dark">
-                      {t({
-                        en: "SMS notifications",
-                        ar: "إشعارات الرسائل النصية",
-                      })}
-                    </span>
+                    <div>
+                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">
+                        {t({
+                          en: "SMS notifications",
+                          ar: "إشعارات الرسائل النصية",
+                        })}
+                      </span>
+                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({
+                          en: "Receive notifications via SMS",
+                          ar: "استلام الإشعارات عبر الرسائل النصية",
+                        })}
+                      </p>
+                    </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -284,7 +311,7 @@ const Settings = () => {
                       onChange={() => handleNotificationChange("sms")}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
               </div>
