@@ -2,11 +2,8 @@ import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Plus,
   Building,
-  MapPin,
   Edit,
-  Trash2,
   AlertTriangle,
   Package,
   Truck,
@@ -23,20 +20,15 @@ import {
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
 import useStore from "../store/useStore";
-import Modal from "../components/UI/Modal";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
-import BranchForm from "../components/Forms/BranchForm";
 import { toast } from "../components/UI/Toast";
 
 const ClientDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
-  const { getClient, deleteBranch, isClientExpired } = useStore();
+  const { getClient, isClientExpired } = useStore();
 
-  const [isAddBranchModalOpen, setIsAddBranchModalOpen] = useState(false);
-  const [editingBranch, setEditingBranch] = useState(null);
-  const [deletingBranch, setDeletingBranch] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const client = getClient(id);
@@ -63,14 +55,6 @@ const ClientDetails = () => {
 
   const isExpired = isClientExpired(client);
 
-  const handleDeleteBranch = () => {
-    if (deletingBranch) {
-      deleteBranch(client.id, deletingBranch.id);
-      toast.success(t(translations.branchDeleted));
-      setDeletingBranch(null);
-    }
-  };
-
   const formatCurrency = (amount, currency) => {
     if (!amount) return "0.00";
 
@@ -94,46 +78,6 @@ const ClientDetails = () => {
       return `${currencyInfo.symbol}${parseFloat(amount).toFixed(2)}`;
     }
   };
-
-  const BranchCard = ({ branch }) => (
-    <div className="card p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-            <Building className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
-              {isRTL ? branch.name : branch.nameEn || branch.name}
-            </h3>
-            {branch.location && (
-              <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                <MapPin className="w-4 h-4" />
-                {isRTL ? branch.location : branch.locationEn || branch.location}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setEditingBranch(branch)}
-            className="p-2 rounded-lg hover:bg-surface-light dark:hover:bg-surface-dark transition-colors"
-            title={t(translations.editBranch)}
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setDeletingBranch(branch)}
-            className="p-2 rounded-lg hover:bg-error-50 dark:hover:bg-error-900/20 text-error-600 transition-colors"
-            title={t(translations.deleteBranch)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -305,6 +249,17 @@ const ClientDetails = () => {
                   </label>
                   <p className="text-text-primary-light dark:text-text-primary-dark">
                     {client.numberOfUsers} {t(translations.users)}
+                  </p>
+                </div>
+              )}
+              {client.numberOfBranches && (
+                <div>
+                  <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                    {t({ en: "Number of Branches", ar: "عدد الفروع" })}
+                  </label>
+                  <p className="text-text-primary-light dark:text-text-primary-dark">
+                    {client.numberOfBranches}{" "}
+                    {t({ en: "branches", ar: "فروع" })}
                   </p>
                 </div>
               )}
@@ -540,96 +495,6 @@ const ClientDetails = () => {
           </div>
         </div>
       )}
-
-      {/* Branches Section */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-text-primary-light dark:text-text-primary-dark">
-            {t(translations.branches)} ({client.branches.length})
-          </h2>
-          <button
-            onClick={() => setIsAddBranchModalOpen(true)}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            {t(translations.addBranch)}
-          </button>
-        </div>
-
-        {client.branches.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {client.branches.map((branch) => (
-              <BranchCard key={branch.id} branch={branch} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <Building className="w-16 h-16 text-text-muted-light dark:text-text-muted-dark mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-              {t(translations.noBranches)}
-            </h3>
-            <p className="text-text-secondary-light dark:text-text-secondary-dark mb-4">
-              {t({
-                en: "Start by adding the first branch for this client",
-                ar: "ابدأ بإضافة أول فرع لهذا العميل",
-              })}
-            </p>
-            <button
-              onClick={() => setIsAddBranchModalOpen(true)}
-              className="btn-primary"
-            >
-              {t(translations.addBranch)}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Add/Edit Branch Modal */}
-      <Modal
-        isOpen={isAddBranchModalOpen || !!editingBranch}
-        onClose={() => {
-          setIsAddBranchModalOpen(false);
-          setEditingBranch(null);
-        }}
-        title={
-          editingBranch ? t(translations.editBranch) : t(translations.addBranch)
-        }
-        size="lg"
-      >
-        <BranchForm
-          clientId={client.id}
-          branch={editingBranch}
-          onClose={() => {
-            setIsAddBranchModalOpen(false);
-            setEditingBranch(null);
-          }}
-        />
-      </Modal>
-
-      {/* Delete Branch Confirmation Modal */}
-      <Modal
-        isOpen={!!deletingBranch}
-        onClose={() => setDeletingBranch(null)}
-        title={t(translations.deleteBranch)}
-        size="sm"
-      >
-        <div className="p-6 space-y-4">
-          <p className="text-text-secondary-light dark:text-text-secondary-dark">
-            {t(translations.deleteBranchConfirm)}
-          </p>
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={() => setDeletingBranch(null)}
-              className="btn-secondary"
-            >
-              {t(translations.cancel)}
-            </button>
-            <button onClick={handleDeleteBranch} className="btn-danger">
-              {t(translations.delete)}
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

@@ -47,7 +47,7 @@ export const translations = {
   },
   subscriptionActive: { en: "Active", ar: "نشط" },
   subscriptionExpiring: { en: "Expiring Soon", ar: "ينتهي قريباً" },
-
+  numberOfBranches: { en: "Number of Branches", ar: "عدد الفروع" },
   // Client Manager
   clientManager: { en: "Client Manager", ar: "مدير العميل" },
   managerName: { en: "Manager Name", ar: "اسم المدير" },

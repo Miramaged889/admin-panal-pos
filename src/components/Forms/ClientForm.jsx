@@ -27,6 +27,7 @@ const ClientForm = ({ client, onClose }) => {
     subscriptionStart: "",
     subscriptionEnd: "",
     numberOfUsers: "",
+    numberOfBranches: "", // New field for number of branches
     subscriptionPrice: "",
     currency: "SAR", // SAR, USD, EUR
     isFreeTrial: false, // New field for free trial
@@ -71,6 +72,7 @@ const ClientForm = ({ client, onClose }) => {
         subscriptionStart: client.subscriptionStart || "",
         subscriptionEnd: client.subscriptionEnd || "",
         numberOfUsers: client.numberOfUsers || "",
+        numberOfBranches: client.numberOfBranches || "", // Initialize new field
         subscriptionPrice: client.subscriptionPrice || "",
         currency: client.currency || "SAR",
         isFreeTrial: client.isFreeTrial || false,
@@ -152,6 +154,10 @@ const ClientForm = ({ client, onClose }) => {
 
     if (formData.numberOfUsers && isNaN(formData.numberOfUsers)) {
       newErrors.numberOfUsers = t(translations.invalidNumber);
+    }
+
+    if (formData.numberOfBranches && isNaN(formData.numberOfBranches)) {
+      newErrors.numberOfBranches = t(translations.invalidNumber);
     }
 
     if (formData.subscriptionPrice && isNaN(formData.subscriptionPrice)) {
@@ -531,6 +537,31 @@ const ClientForm = ({ client, onClose }) => {
                 {errors.numberOfUsers && (
                   <p className="mt-1 text-sm text-error-600 dark:text-error-400">
                     {errors.numberOfUsers}
+                  </p>
+                )}
+              </div>
+
+              {/* Number of Branches */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+                  {t(translations.numberOfBranches)}
+                </label>
+                <input
+                  type="number"
+                  name="numberOfBranches"
+                  value={formData.numberOfBranches}
+                  onChange={handleChange}
+                  className={`input-field ${
+                    errors.numberOfBranches
+                      ? "border-error-500 focus:ring-error-500"
+                      : ""
+                  }`}
+                  placeholder={t(translations.numberOfBranches)}
+                  min="0"
+                />
+                {errors.numberOfBranches && (
+                  <p className="mt-1 text-sm text-error-600 dark:text-error-400">
+                    {errors.numberOfBranches}
                   </p>
                 )}
               </div>
