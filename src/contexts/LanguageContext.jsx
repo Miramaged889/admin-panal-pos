@@ -31,7 +31,7 @@ export const LanguageProvider = ({ children }) => {
   const t = (translations) => {
     if (!translations) {
       console.warn("Translation key is undefined");
-      return "";
+      return "Translation Missing";
     }
 
     if (typeof translations === "string") {
@@ -39,10 +39,30 @@ export const LanguageProvider = ({ children }) => {
     }
 
     if (typeof translations === "object" && translations !== null) {
-      return translations[language] || translations.en || translations.ar || "";
+      // Try to get the translation for current language
+      const translation = translations[language];
+      if (translation) {
+        return translation;
+      }
+
+      // Fallback to English
+      if (translations.en) {
+        return translations.en;
+      }
+
+      // Fallback to Arabic
+      if (translations.ar) {
+        return translations.ar;
+      }
+
+      // If no translation found, return the first available value
+      const firstValue = Object.values(translations)[0];
+      if (firstValue) {
+        return firstValue;
+      }
     }
 
-    return "";
+    return "Translation Missing";
   };
 
   return (

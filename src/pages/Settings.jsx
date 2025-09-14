@@ -1,455 +1,319 @@
 import { useState } from "react";
 import {
   Settings as SettingsIcon,
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  Save,
   Moon,
   Sun,
-  Globe,
-  Bell,
-  Database,
-  User,
-  Palette,
-  Save,
-  RefreshCw,
-  Trash2,
-  Download,
-  Upload,
-  Mail,
-  Phone,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { translations } from "../constants/translations";
-import useStore from "../store/useStore";
-import { toast } from "../components/UI/Toast";
+import { useAppSelector } from "../store/hooks";
+import { selectUser } from "../store/selectors";
 
 const Settings = () => {
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, language, toggleLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
-  const { user } = useStore();
+  const user = useAppSelector(selectUser);
 
-  const [activeTab, setActiveTab] = useState("general");
-  const [formData, setFormData] = useState({
-    email: user?.email || "",
-    phone: user?.phone || "",
-    notifications: {
-      email: true,
-      push: true,
-      sms: false,
-    },
-    privacy: {
-      dataSharing: false,
-      analytics: true,
-      marketing: false,
-    },
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: false,
+    sms: true,
   });
 
-  const tabs = [
-    {
-      id: "general",
-      label: t({ en: "General", ar: "عام" }),
-      icon: SettingsIcon,
-    },
-    {
-      id: "appearance",
-      label: t({ en: "Appearance", ar: "المظهر" }),
-      icon: Palette,
-    },
-    {
-      id: "notifications",
-      label: t({ en: "Notifications", ar: "الإشعارات" }),
-      icon: Bell,
-    },
-    {
-      id: "data",
-      label: t({ en: "Data & Backup", ar: "البيانات والنسخ الاحتياطي" }),
-      icon: Database,
-    },
-  ];
+  const [security, setSecurity] = useState({
+    twoFactor: false,
+    sessionTimeout: 30,
+    passwordExpiry: 90,
+  });
 
-  const handleNotificationChange = (type) => {
-    setFormData((prev) => ({
+  const handleNotificationChange = (key) => {
+    setNotifications((prev) => ({
       ...prev,
-      notifications: {
-        ...prev.notifications,
-        [type]: !prev.notifications[type],
-      },
+      [key]: !prev[key],
     }));
   };
 
-  const handleSaveSettings = () => {
-    // Mock save functionality
-    toast.success(
-      t({ en: "Settings saved successfully!", ar: "تم حفظ الإعدادات بنجاح!" })
-    );
+  const handleSecurityChange = (key, value) => {
+    setSecurity((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
-  const handleExportData = () => {
-    // Mock export functionality
-    toast.success(
-      t({ en: "Data exported successfully!", ar: "تم تصدير البيانات بنجاح!" })
-    );
-  };
+  const settingsSections = [
+    {
+      title: t({ en: "Profile Settings", ar: "إعدادات الملف الشخصي" }),
+      icon: User,
+      items: [
+        {
+          label: t({ en: "Name", ar: "الاسم" }),
+          value: user?.name || t({ en: "Not set", ar: "غير محدد" }),
+          type: "text",
+        },
+        {
+          label: t({ en: "Email", ar: "البريد الإلكتروني" }),
+          value: user?.email || t({ en: "Not set", ar: "غير محدد" }),
+          type: "email",
+        },
+        {
+          label: t({ en: "Role", ar: "الدور" }),
+          value: user?.role || t({ en: "Admin", ar: "مدير" }),
+          type: "text",
+        },
+      ],
+    },
+    {
+      title: t({ en: "Notifications", ar: "الإشعارات" }),
+      icon: Bell,
+      items: [
+        {
+          label: t({ en: "Email Notifications", ar: "إشعارات البريد" }),
+          type: "toggle",
+          value: notifications.email,
+          onChange: () => handleNotificationChange("email"),
+        },
+        {
+          label: t({ en: "Push Notifications", ar: "الإشعارات الفورية" }),
+          type: "toggle",
+          value: notifications.push,
+          onChange: () => handleNotificationChange("push"),
+        },
+        {
+          label: t({ en: "SMS Notifications", ar: "إشعارات الرسائل" }),
+          type: "toggle",
+          value: notifications.sms,
+          onChange: () => handleNotificationChange("sms"),
+        },
+      ],
+    },
+    {
+      title: t({ en: "Security", ar: "الأمان" }),
+      icon: Shield,
+      items: [
+        {
+          label: t({
+            en: "Two-Factor Authentication",
+            ar: "المصادقة الثنائية",
+          }),
+          type: "toggle",
+          value: security.twoFactor,
+          onChange: () =>
+            handleSecurityChange("twoFactor", !security.twoFactor),
+        },
+        {
+          label: t({
+            en: "Session Timeout (minutes)",
+            ar: "مهلة الجلسة (دقائق)",
+          }),
+          type: "select",
+          value: security.sessionTimeout,
+          options: [
+            { value: 15, label: "15" },
+            { value: 30, label: "30" },
+            { value: 60, label: "60" },
+            { value: 120, label: "120" },
+          ],
+          onChange: (value) => handleSecurityChange("sessionTimeout", value),
+        },
+        {
+          label: t({
+            en: "Password Expiry (days)",
+            ar: "انتهاء كلمة المرور (أيام)",
+          }),
+          type: "select",
+          value: security.passwordExpiry,
+          options: [
+            { value: 30, label: "30" },
+            { value: 60, label: "60" },
+            { value: 90, label: "90" },
+            { value: 180, label: "180" },
+          ],
+          onChange: (value) => handleSecurityChange("passwordExpiry", value),
+        },
+      ],
+    },
+    {
+      title: t({ en: "Appearance", ar: "المظهر" }),
+      icon: Palette,
+      items: [
+        {
+          label: t({ en: "Theme", ar: "المظهر" }),
+          type: "theme-toggle",
+          value: isDark,
+          onChange: toggleTheme,
+        },
+        {
+          label: t({ en: "Language", ar: "اللغة" }),
+          type: "language-toggle",
+          value: language,
+          onChange: toggleLanguage,
+        },
+      ],
+    },
+  ];
 
-  const handleImportData = () => {
-    // Mock import functionality
-    toast.success(
-      t({ en: "Data imported successfully!", ar: "تم استيراد البيانات بنجاح!" })
-    );
-  };
-
-  const handleClearData = () => {
-    if (
-      confirm(
-        t({
-          en: "Are you sure you want to clear all data? This action cannot be undone.",
-          ar: "هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء.",
-        })
-      )
-    ) {
-      toast.success(
-        t({ en: "Data cleared successfully!", ar: "تم مسح البيانات بنجاح!" })
-      );
-    }
-  };
-
-  const TabContent = () => {
-    switch (activeTab) {
-      case "general":
+  const SettingItem = ({ item }) => {
+    switch (item.type) {
+      case "toggle":
         return (
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Account Information", ar: "معلومات الحساب" })}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.email)}
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="input-field"
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.phone)}
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                    className="input-field"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Language & Region", ar: "اللغة والمنطقة" })}
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-primary-600" />
-                    <div>
-                      <p className="font-medium text-text-primary-light dark:text-text-primary-dark">
-                        {t(translations.language)}
-                      </p>
-                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                        {language === "en"
-                          ? t(translations.english)
-                          : t(translations.arabic)}
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={toggleLanguage} className="btn-secondary">
-                    {t({ en: "Change", ar: "تغيير" })}
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              {item.label}
+            </span>
+            <button
+              onClick={item.onChange}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                item.value ? "bg-primary-600" : "bg-gray-200 dark:bg-gray-700"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  item.value ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
           </div>
         );
 
-      case "appearance":
+      case "select":
         return (
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Theme Settings", ar: "إعدادات المظهر" })}
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {isDark ? (
-                      <Moon className="w-5 h-5 text-primary-600" />
-                    ) : (
-                      <Sun className="w-5 h-5 text-primary-600" />
-                    )}
-                    <div>
-                      <p className="font-medium text-text-primary-light dark:text-text-primary-dark">
-                        {t({ en: "Dark Mode", ar: "الوضع المظلم" })}
-                      </p>
-                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                        {isDark
-                          ? t({ en: "Enabled", ar: "مفعل" })
-                          : t({ en: "Disabled", ar: "معطل" })}
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={toggleTheme} className="btn-secondary">
-                    {t({ en: "Toggle", ar: "تبديل" })}
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              {item.label}
+            </span>
+            <select
+              value={item.value}
+              onChange={(e) => item.onChange(parseInt(e.target.value))}
+              className="input-field w-24 text-sm"
+            >
+              {item.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         );
 
-      case "notifications":
+      case "theme-toggle":
         return (
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Notification Preferences", ar: "تفضيلات الإشعارات" })}
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-primary-600" />
-                    <div>
-                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">
-                        {t({
-                          en: "Email notifications",
-                          ar: "إشعارات البريد الإلكتروني",
-                        })}
-                      </span>
-                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                        {t({
-                          en: "Receive notifications via email",
-                          ar: "استلام الإشعارات عبر البريد الإلكتروني",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications.email}
-                      onChange={() => handleNotificationChange("email")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Bell className="w-5 h-5 text-primary-600" />
-                    <div>
-                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">
-                        {t({
-                          en: "Push notifications",
-                          ar: "الإشعارات الفورية",
-                        })}
-                      </span>
-                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                        {t({
-                          en: "Receive instant notifications",
-                          ar: "استلام الإشعارات الفورية",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications.push}
-                      onChange={() => handleNotificationChange("push")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-surface-light dark:bg-surface-dark rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5 text-primary-600" />
-                    <div>
-                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">
-                        {t({
-                          en: "SMS notifications",
-                          ar: "إشعارات الرسائل النصية",
-                        })}
-                      </span>
-                      <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                        {t({
-                          en: "Receive notifications via SMS",
-                          ar: "استلام الإشعارات عبر الرسائل النصية",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications.sms}
-                      onChange={() => handleNotificationChange("sms")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              {item.label}
+            </span>
+            <button
+              onClick={item.onChange}
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-light dark:hover:bg-surface-dark transition-colors"
+            >
+              {item.value ? (
+                <Moon className="w-5 h-5 text-purple-600" />
+              ) : (
+                <Sun className="w-5 h-5 text-yellow-600" />
+              )}
+              <span className="text-sm font-medium">
+                {item.value
+                  ? t(translations.darkMode)
+                  : t(translations.lightMode)}
+              </span>
+            </button>
           </div>
         );
 
-      case "data":
+      case "language-toggle":
         return (
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "Data Management", ar: "إدارة البيانات" })}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  onClick={handleExportData}
-                  className="btn-secondary flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  {t({ en: "Export Data", ar: "تصدير البيانات" })}
-                </button>
-                <button
-                  onClick={handleImportData}
-                  className="btn-secondary flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {t({ en: "Import Data", ar: "استيراد البيانات" })}
-                </button>
-                <button
-                  onClick={handleClearData}
-                  className="btn-danger flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {t({ en: "Clear All Data", ar: "مسح جميع البيانات" })}
-                </button>
-                <button className="btn-secondary flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4" />
-                  {t({ en: "Reset Settings", ar: "إعادة تعيين الإعدادات" })}
-                </button>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-                {t({ en: "System Information", ar: "معلومات النظام" })}
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Version", ar: "الإصدار" })}
-                  </span>
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    1.0.0
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Last Updated", ar: "آخر تحديث" })}
-                  </span>
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    {new Date().toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Storage Used", ar: "المساحة المستخدمة" })}
-                  </span>
-                  <span className="text-text-primary-light dark:text-text-primary-dark">
-                    2.4 MB
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              {item.label}
+            </span>
+            <button
+              onClick={item.onChange}
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-light dark:hover:bg-surface-dark transition-colors"
+            >
+              <Globe className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-medium">
+                {item.value === "en" ? "English" : "العربية"}
+              </span>
+            </button>
           </div>
         );
 
       default:
-        return null;
+        return (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              {item.label}
+            </span>
+            <span className="text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+              {item.value}
+            </span>
+          </div>
+        );
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-text-primary-light dark:text-text-primary-dark">
-          {t(translations.settings)}
-        </h1>
-        <p className="text-text-secondary-light dark:text-text-secondary-dark mt-2">
-          {t({
-            en: "Manage your account settings and preferences",
-            ar: "إدارة إعدادات حسابك وتفضيلاتك",
-          })}
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
+          <SettingsIcon className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-text-primary-light dark:text-text-primary-dark">
+            {t(translations.settings)}
+          </h1>
+          <p className="text-text-secondary-light dark:text-text-secondary-dark">
+            {t({
+              en: "Manage your account settings and preferences",
+              ar: "إدارة إعدادات حسابك وتفضيلاتك",
+            })}
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="card p-4">
-            <nav className="space-y-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      activeTab === tab.id
-                        ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
-                        : "text-text-secondary-light dark:text-text-secondary-dark hover:text-text-primary-light dark:hover:text-text-primary-dark hover:bg-surface-light dark:hover:bg-surface-dark"
-                    }`}
+      {/* Settings Sections */}
+      <div className="space-y-6">
+        {settingsSections.map((section, sectionIndex) => {
+          const Icon = section.icon;
+          return (
+            <div key={sectionIndex} className="card p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">
+                  {section.title}
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                {section.items.map((item, itemIndex) => (
+                  <div
+                    key={itemIndex}
+                    className="py-3 border-b border-border-light dark:border-border-dark last:border-b-0"
                   >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
+                    <SettingItem item={item} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* Content */}
-        <div className="lg:col-span-3">
-          <TabContent />
-
-          {/* Save Button */}
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={handleSaveSettings}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {t(translations.save)}
-            </button>
-          </div>
-        </div>
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <button className="btn-primary flex items-center gap-2">
+          <Save className="w-5 h-5" />
+          {t(translations.save)}
+        </button>
       </div>
     </div>
   );

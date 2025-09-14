@@ -20,7 +20,12 @@ export const translations = {
   // Dashboard
   totalClients: { en: "Total Clients", ar: "إجمالي العملاء" },
   activeClients: { en: "Active Clients", ar: "العملاء النشطون" },
+  expiredSubscriptions: {
+    en: "Expired Subscriptions",
+    ar: "الاشتراكات المنتهية",
+  },
   expiredClients: { en: "Expired Clients", ar: "العملاء المنتهية الصلاحية" },
+  trialClients: { en: "Trial Clients", ar: "عملاء التجربة" },
   totalBranches: { en: "Total Branches", ar: "إجمالي الفروع" },
   recentActivity: { en: "Recent Activity", ar: "النشاط الأخير" },
   systemOverview: { en: "System Overview", ar: "نظرة عامة على النظام" },
@@ -91,7 +96,10 @@ export const translations = {
   filter: { en: "Filter", ar: "تصفية" },
   actions: { en: "Actions", ar: "الإجراءات" },
   view: { en: "View", ar: "عرض" },
+  viewAll: { en: "View All", ar: "عرض الكل" },
   loading: { en: "Loading...", ar: "جاري التحميل..." },
+  next: { en: "Next", ar: "التالي" },
+  previous: { en: "Previous", ar: "السابق" },
 
   // Form Fields
   name: { en: "Name", ar: "الاسم" },

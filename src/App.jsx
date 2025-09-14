@@ -4,9 +4,11 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "./store";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
-import useStore from "./store/useStore";
+import { useAppSelector } from "./store/hooks";
 
 // Layout
 import MainLayout from "./components/Layout/MainLayout";
@@ -22,60 +24,62 @@ import ContactUs from "./pages/ContactUs";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useStore();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 // Public Route Component (redirect to dashboard if authenticated)
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useStore();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
   return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
 function App() {
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
+    <Provider store={store}>
+      <ThemeProvider>
+        <LanguageProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
 
-            <Route
-              path="/subscription-expired"
-              element={<SubscriptionExpired />}
-            />
+              <Route
+                path="/subscription-expired"
+                element={<SubscriptionExpired />}
+              />
 
-            {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MainLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="clients/:id" element={<ClientDetails />} />
-              <Route path="contact" element={<ContactUs />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+              {/* Protected Routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="clients" element={<Clients />} />
+                <Route path="clients/:id" element={<ClientDetails />} />
+                <Route path="contact" element={<ContactUs />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Router>
-      </LanguageProvider>
-    </ThemeProvider>
+              {/* Catch all route */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Router>
+        </LanguageProvider>
+      </ThemeProvider>
+    </Provider>
   );
 }
 

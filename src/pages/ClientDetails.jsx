@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
   Building,
@@ -19,19 +19,57 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
-import useStore from "../store/useStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { selectTenantsList, selectTenantsLoading } from "../store/selectors";
+import { fetchTenants, deleteClient } from "../store/actions";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
+import Modal from "../components/UI/Modal";
+import ClientForm from "../components/Forms/ClientForm";
 import { toast } from "../components/UI/Toast";
 
 const ClientDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
-  const { getClient, isClientExpired } = useStore();
+  const dispatch = useAppDispatch();
+  const tenants = useAppSelector(selectTenantsList);
+  const loading = useAppSelector(selectTenantsLoading);
+  const client = tenants.find((tenant) => tenant.id === parseInt(id));
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const client = getClient(id);
+  useEffect(() => {
+    if (!tenants.length) {
+      dispatch(fetchTenants());
+    }
+  }, [dispatch, tenants.length]);
+
+  const handleDelete = async () => {
+    try {
+      await dispatch(deleteClient(client.id)).unwrap();
+      toast.success(
+        t({ en: "Client deleted successfully", ar: "تم حذف العميل بنجاح" })
+      );
+      navigate("/clients");
+    } catch (error) {
+      console.error("Failed to delete client:", error);
+      toast.error(
+        t({
+          en: "Failed to delete client",
+          ar: "فشل في حذف العميل",
+        })
+      );
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!client) {
     return (
@@ -53,7 +91,7 @@ const ClientDetails = () => {
     );
   }
 
-  const isExpired = isClientExpired(client);
+  const isExpired = new Date() > new Date(client.End_Date);
 
   const formatCurrency = (amount, currency) => {
     if (!amount) return "0.00";
@@ -91,113 +129,108 @@ const ClientDetails = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-text-primary-light dark:text-text-primary-dark">
-            {isRTL ? client.name : client.nameEn || client.name}
+            {isRTL
+              ? client.arabic_name
+              : client.english_name || client.arabic_name}
           </h1>
           <p className="text-text-secondary-light dark:text-text-secondary-dark">
             {t(translations.clientDetails)}
           </p>
         </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Edit className="w-4 h-4" />
+            {t(translations.editClient)}
+          </button>
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="btn-danger flex items-center gap-2"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            {t(translations.deleteClient)}
+          </button>
+        </div>
       </div>
 
       {/* Company Information Card */}
-      {client.companyName && (
-        <div className="card p-6">
-          <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-            {t({ en: "Company Information", ar: "معلومات الشركة" })}
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Company Name (Arabic)", ar: "اسم الشركة (عربي)" })}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.companyName}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({
-                    en: "Company Name (English)",
-                    ar: "اسم الشركة (إنجليزي)",
-                  })}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.companyNameEn}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Commercial Record", ar: "السجل التجاري" })}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.commercialRecord}
-                </p>
-              </div>
+      <div className="card p-6">
+        <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
+          {t({ en: "Company Information", ar: "معلومات الشركة" })}
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Company Name (Arabic)", ar: "اسم الشركة (عربي)" })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.arabic_name}
+              </p>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Activity Type", ar: "نوع النشاط" })}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.companyActivityType === "cafe" &&
-                    t({ en: "Cafe", ar: "مقهى" })}
-                  {client.companyActivityType === "restaurant" &&
-                    t({ en: "Restaurant", ar: "مطعم" })}
-                  {client.companyActivityType === "catering" &&
-                    t({ en: "Catering", ar: "خدمات الطعام" })}
-                  {client.companyActivityType === "other" && (
-                    <span>
-                      {t({ en: "Other", ar: "أخرى" })}:{" "}
-                      {client.otherActivityType}
-                    </span>
-                  )}
-                </p>
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({
+                  en: "Company Name (English)",
+                  ar: "اسم الشركة (إنجليزي)",
+                })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.english_name}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Commercial Record", ar: "السجل التجاري" })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.Commercial_Record}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Activity Type", ar: "نوع النشاط" })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.Activity_Type}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Subdomain", ar: "المجال الفرعي" })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.subdomain}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Status", ar: "الحالة" })}
+              </label>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    client.is_active ? "bg-success-500" : "bg-error-500"
+                  }`}
+                />
+                <span
+                  className={`text-sm font-medium ${
+                    client.is_active ? "text-success-600" : "text-error-600"
+                  }`}
+                >
+                  {client.is_active
+                    ? t({ en: "Active", ar: "نشط" })
+                    : t({ en: "Inactive", ar: "غير نشط" })}
+                </span>
               </div>
-              {/* Legacy Company License (for backward compatibility) */}
-              {client.companyLicense && (
-                <div>
-                  <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Company License", ar: "ترخيص الشركة" })}
-                  </label>
-                  <p className="text-text-primary-light dark:text-text-primary-dark">
-                    {client.companyLicense}
-                  </p>
-                </div>
-              )}
-              {/* Legacy Company Status (for backward compatibility) */}
-              {client.companyStatus && (
-                <div>
-                  <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Company Status", ar: "حالة الشركة" })}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        client.companyStatus === "active"
-                          ? "bg-success-500"
-                          : "bg-error-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        client.companyStatus === "active"
-                          ? "text-success-600"
-                          : "text-error-600"
-                      }`}
-                    >
-                      {client.companyStatus === "active"
-                        ? t({ en: "Active", ar: "نشط" })
-                        : t({ en: "Inactive", ar: "غير نشط" })}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Main Client Information Card */}
       <div className="card p-6">
@@ -215,7 +248,7 @@ const ClientDetails = () => {
                   {t(translations.clientNameAr)}
                 </label>
                 <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.name}
+                  {client.arabic_name}
                 </p>
               </div>
               <div>
@@ -223,43 +256,26 @@ const ClientDetails = () => {
                   {t(translations.clientNameEn)}
                 </label>
                 <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.nameEn}
+                  {client.english_name}
                 </p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.email)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.email}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.phone)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.phone}
-                </p>
-              </div>
-              {client.numberOfUsers && (
+              {client.no_users && (
                 <div>
                   <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
                     {t(translations.numberOfUsers)}
                   </label>
                   <p className="text-text-primary-light dark:text-text-primary-dark">
-                    {client.numberOfUsers} {t(translations.users)}
+                    {client.no_users} {t(translations.users)}
                   </p>
                 </div>
               )}
-              {client.numberOfBranches && (
+              {client.no_branches && (
                 <div>
                   <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
                     {t({ en: "Number of Branches", ar: "عدد الفروع" })}
                   </label>
                   <p className="text-text-primary-light dark:text-text-primary-dark">
-                    {client.numberOfBranches}{" "}
-                    {t({ en: "branches", ar: "فروع" })}
+                    {client.no_branches} {t({ en: "branches", ar: "فروع" })}
                   </p>
                 </div>
               )}
@@ -275,7 +291,7 @@ const ClientDetails = () => {
             {/* Enhanced Subscription Details */}
             <div className="mt-4 space-y-3">
               {/* Free Trial Status */}
-              {client.isFreeTrial && (
+              {client.on_trial && (
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-success-600" />
                   <span className="text-sm text-success-600 font-medium">
@@ -286,23 +302,12 @@ const ClientDetails = () => {
               )}
 
               {/* Subscription Price */}
-              {client.subscriptionPrice && (
+              {client.Subscription_Price && (
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-primary-600" />
                   <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
                     {t({ en: "Price", ar: "السعر" })}:{" "}
-                    {formatCurrency(client.subscriptionPrice, client.currency)}
-                  </span>
-                </div>
-              )}
-
-              {/* Legacy Trial Days (for backward compatibility) */}
-              {client.trialDays && !client.isFreeTrial && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                    {t({ en: "Trial Period", ar: "فترة التجربة" })}:{" "}
-                    {client.trialDays} {t({ en: "days", ar: "أيام" })}
+                    {formatCurrency(client.Subscription_Price, client.Currency)}
                   </span>
                 </div>
               )}
@@ -317,7 +322,7 @@ const ClientDetails = () => {
                     <Package className="w-4 h-4 text-primary-600" />
                     <span
                       className={`text-sm ${
-                        client.subscriptionOptions?.ketchin
+                        client.modules_enabled?.kitchen
                           ? "text-success-600 font-medium"
                           : "text-text-muted-light dark:text-text-muted-dark"
                       }`}
@@ -329,7 +334,7 @@ const ClientDetails = () => {
                     <Truck className="w-4 h-4 text-primary-600" />
                     <span
                       className={`text-sm ${
-                        client.subscriptionOptions?.delivery
+                        client.modules_enabled?.Delivery
                           ? "text-success-600 font-medium"
                           : "text-text-muted-light dark:text-text-muted-dark"
                       }`}
@@ -361,140 +366,146 @@ const ClientDetails = () => {
         </div>
       </div>
 
-      {/* Manager Access Card */}
-      {client.managerEmail && (
-        <div className="card p-6">
-          <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-            {t({ en: "Manager Access", ar: "وصول المدير" })}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Manager Email", ar: "بريد المدير" })}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.managerEmail}
-                </p>
+      {/* Manager Information Card */}
+      <div className="card p-6">
+        <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
+          {t({ en: "Manager Information", ar: "معلومات المدير" })}
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Manager Username", ar: "اسم مستخدم المدير" })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.manager_username ||
+                  t({ en: "Not set", ar: "غير محدد" })}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Manager Email", ar: "بريد المدير" })}
+              </label>
+              <p className="text-text-primary-light dark:text-text-primary-dark">
+                {client.manager_email || t({ en: "Not set", ar: "غير محدد" })}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Manager Role", ar: "دور المدير" })}
+              </label>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary-600" />
+                <span className="text-text-primary-light dark:text-text-primary-dark capitalize">
+                  {client.manager_role || t({ en: "Not set", ar: "غير محدد" })}
+                </span>
               </div>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t({ en: "Manager Password", ar: "كلمة مرور المدير" })}
-                </label>
-                <div className="flex items-center gap-2">
-                  <p className="text-text-primary-light dark:text-text-primary-dark">
-                    {showPassword ? client.managerPassword : "••••••••"}
-                  </p>
-                  <button
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="p-1 rounded hover:bg-surface-light dark:hover:bg-surface-dark transition-colors"
-                    title={
-                      showPassword
-                        ? t({ en: "Hide", ar: "إخفاء" })
-                        : t({ en: "Show", ar: "إظهار" })
-                    }
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-text-secondary-light dark:text-text-secondary-dark" />
-                    ) : (
-                      <Eye className="w-4 h-4 text-text-secondary-light dark:text-text-secondary-dark" />
-                    )}
-                  </button>
-                </div>
+            <div>
+              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Access Level", ar: "مستوى الوصول" })}
+              </label>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    client.manager_role === "admin"
+                      ? "bg-success-500"
+                      : client.manager_role === "manager"
+                      ? "bg-warning-500"
+                      : "bg-text-muted-light dark:bg-text-muted-dark"
+                  }`}
+                />
+                <span
+                  className={`text-sm font-medium ${
+                    client.manager_role === "admin"
+                      ? "text-success-600"
+                      : client.manager_role === "manager"
+                      ? "text-warning-600"
+                      : "text-text-muted-light dark:text-text-muted-dark"
+                  }`}
+                >
+                  {client.manager_role === "admin"
+                    ? t({ en: "Full Access", ar: "وصول كامل" })
+                    : client.manager_role === "manager"
+                    ? t({ en: "Limited Access", ar: "وصول محدود" })
+                    : t({ en: "Basic Access", ar: "وصول أساسي" })}
+                </span>
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Additional Clients Card */}
-      {client.additionalClients && client.additionalClients.length > 0 && (
-        <div className="card p-6">
-          <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-            {t({ en: "Additional Clients", ar: "عملاء إضافيون" })} (
-            {client.additionalClients.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {client.additionalClients.map((additionalClient) => (
-              <div
-                key={additionalClient.id}
-                className="p-4 border border-border-light dark:border-border-dark rounded-lg"
+        {/* Manager Actions */}
+        <div className="mt-6 pt-6 border-t border-border-light dark:border-border-dark">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                {t({ en: "Manager Actions", ar: "إجراءات المدير" })}
+              </h3>
+              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                {t({
+                  en: "Manage manager access and permissions",
+                  ar: "إدارة وصول المدير والأذونات",
+                })}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="btn-secondary flex items-center gap-2"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-text-primary-light dark:text-text-primary-dark">
-                      {isRTL
-                        ? additionalClient.name
-                        : additionalClient.nameEn || additionalClient.name}
-                    </h3>
-                    <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                      {additionalClient.email}
-                    </p>
-                  </div>
-                </div>
-                {additionalClient.phone && (
-                  <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                    <Phone className="w-4 h-4" />
-                    {additionalClient.phone}
-                  </div>
-                )}
-              </div>
-            ))}
+                <Edit className="w-4 h-4" />
+                {t({ en: "Edit Manager", ar: "تعديل المدير" })}
+              </button>
+              <button className="btn-outline flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                {t({ en: "View Details", ar: "عرض التفاصيل" })}
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Legacy Manager Card (for backward compatibility) */}
-      {client.manager?.name && !client.managerEmail && (
-        <div className="card p-6">
-          <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
-            {t(translations.clientManager)}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.managerNameAr)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.manager.name}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.managerNameEn)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.manager.nameEn}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.managerEmail)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.manager.email}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.managerPhone)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.manager.phone}
-                </p>
-              </div>
-            </div>
+      {/* Edit Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={t(translations.editClient)}
+        size="lg"
+      >
+        <ClientForm
+          client={client}
+          onClose={() => setIsEditModalOpen(false)}
+          isEditMode={true}
+        />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title={t(translations.deleteClient)}
+        size="sm"
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-text-secondary-light dark:text-text-secondary-dark">
+            {t(translations.deleteClientConfirm)}
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="btn-secondary"
+            >
+              {t(translations.cancel)}
+            </button>
+            <button onClick={handleDelete} className="btn-danger">
+              {t(translations.delete)}
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

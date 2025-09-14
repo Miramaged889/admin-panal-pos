@@ -16,15 +16,16 @@ import {
 import { useTheme } from "../../contexts/ThemeContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { translations } from "../../constants/translations";
-import useStore from "../../store/useStore";
+import { useAppDispatch } from "../../store/hooks";
+import { logoutSaaSAdmin } from "../../store/actions";
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { isDark, toggleTheme } = useTheme();
   const { language, toggleLanguage, isRTL, t } = useLanguage();
-  const { logout } = useStore();
 
   const menuItems = [
     {
@@ -55,9 +56,14 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     },
   ];
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutSaaSAdmin()).unwrap();
+      navigate("/login");
+    } catch (error) {
+      // If logout fails, still redirect to login
+      navigate("/login");
+    }
   };
 
   const SidebarContent = () => (

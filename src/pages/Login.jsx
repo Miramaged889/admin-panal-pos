@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building,
@@ -13,22 +13,47 @@ import {
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { translations } from "../constants/translations";
-import useStore from "../store/useStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  selectAuthLoading,
+  selectAuthError,
+  selectIsAuthenticated,
+} from "../store/selectors";
+import { loginSaaSAdmin, clearAuthError } from "../store/actions";
 import { toast } from "../components/UI/Toast";
+
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: "admin@example.com",
-    password: "admin123",
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const navigate = useNavigate();
-  const { t, toggleLanguage, language, isRTL } = useLanguage();
+  const dispatch = useAppDispatch();
+  const { t, toggleLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
-  const { login } = useStore();
+  const loading = useAppSelector(selectAuthLoading);
+  const error = useAppSelector(selectAuthError);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Handle error messages
+  useEffect(() => {
+    if (error) {
+      const errorMessage = error.message || error;
+      toast.error(t({ en: errorMessage, ar: errorMessage }));
+      dispatch(clearAuthError());
+    }
+  }, [error, dispatch, t]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -54,30 +79,15 @@ const Login = () => {
 
     if (!validateForm()) return;
 
-    setIsLoading(true);
-
-    // Mock authentication
-    setTimeout(() => {
-      // Simple mock validation
-      if (
-        formData.email === "admin@example.com" &&
-        formData.password === "admin123"
-      ) {
-        login({
-          id: "1",
-          name: "Administrator",
-          email: formData.email,
-          role: "admin",
-        });
-        toast.success(
-          t({ en: "Login successful!", ar: "تم تسجيل الدخول بنجاح!" })
-        );
-        navigate("/dashboard");
-      } else {
-        toast.error(t(translations.loginFailed));
-      }
-      setIsLoading(false);
-    }, 1000);
+    try {
+      await dispatch(loginSaaSAdmin(formData)).unwrap();
+      toast.success(
+        t({ en: "Login successful!", ar: "تم تسجيل الدخول بنجاح!" })
+      );
+      navigate("/dashboard");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleChange = (e) => {
@@ -128,18 +138,6 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
-            <p className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
-              {t({ en: "Demo Credentials:", ar: "بيانات تجريبية:" })}
-            </p>
-            <p className="text-xs text-primary-700 dark:text-primary-300">
-              {t({ en: "Email:", ar: "البريد:" })} admin@example.com
-            </p>
-            <p className="text-xs text-primary-700 dark:text-primary-300">
-              {t({ en: "Password:", ar: "كلمة المرور:" })} admin123
-            </p>
-          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -227,10 +225,10 @@ const Login = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {loading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   {t(translations.loading)}

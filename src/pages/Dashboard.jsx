@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Users,
   Building,
@@ -8,36 +9,48 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
-import useStore from "../store/useStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { fetchTenants } from "../store/actions";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 
 const Dashboard = () => {
   const { t } = useLanguage();
-  const { clients } = useStore();
+  const dispatch = useAppDispatch();
+  const tenants = useAppSelector((state) => state.clients.tenants);
 
-  const activeClients = clients.filter((client) => {
-    const isExpired = new Date() > new Date(client.subscriptionEnd);
+  useEffect(() => {
+    dispatch(fetchTenants());
+  }, [dispatch]);
+
+  // Ensure tenants is an array and handle errors gracefully
+  const safeTenants = Array.isArray(tenants) ? tenants : [];
+
+  const activeTenants = safeTenants.filter((tenant) => {
+    if (!tenant || !tenant.End_Date) return false;
+    const isExpired = new Date() > new Date(tenant.End_Date);
     return !isExpired;
   });
 
-  const expiredClients = clients.filter((client) => {
-    const isExpired = new Date() > new Date(client.subscriptionEnd);
+  const expiredTenants = safeTenants.filter((tenant) => {
+    if (!tenant || !tenant.End_Date) return false;
+    const isExpired = new Date() > new Date(tenant.End_Date);
     return isExpired;
   });
 
-  const totalBranches = clients.reduce(
-    (sum, client) => sum + client.branches.length,
+  const totalBranches = safeTenants.reduce(
+    (sum, tenant) => sum + (parseInt(tenant?.no_branches) || 0),
     0
   );
 
-  const totalUsers = clients.reduce(
-    (sum, client) => sum + (parseInt(client.numberOfUsers) || 0),
+  const totalUsers = safeTenants.reduce(
+    (sum, tenant) => sum + (parseInt(tenant?.no_users) || 0),
     0
   );
 
-  const expiringSoonClients = clients.filter((client) => {
+  const expiringSoonTenants = safeTenants.filter((tenant) => {
+    if (!tenant || !tenant.End_Date) return false;
     const daysUntilExpiry = Math.ceil(
-      (new Date(client.subscriptionEnd) - new Date()) / (1000 * 60 * 60 * 24)
+      (new Date(tenant.End_Date) - new Date()) / (1000 * 60 * 60 * 24)
     );
     return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
   });
@@ -45,7 +58,7 @@ const Dashboard = () => {
   const statsCards = [
     {
       title: t(translations.totalClients),
-      value: clients.length,
+      value: safeTenants.length,
       icon: Users,
       color: "bg-primary-500",
       bgColor: "bg-primary-50 dark:bg-primary-900/20",
@@ -53,7 +66,7 @@ const Dashboard = () => {
     },
     {
       title: t(translations.activeClients),
-      value: activeClients.length,
+      value: activeTenants.length,
       icon: CheckCircle,
       color: "bg-success-500",
       bgColor: "bg-success-50 dark:bg-success-900/20",
@@ -61,7 +74,7 @@ const Dashboard = () => {
     },
     {
       title: t(translations.expiredClients),
-      value: expiredClients.length,
+      value: expiredTenants.length,
       icon: AlertTriangle,
       color: "bg-error-500",
       bgColor: "bg-error-50 dark:bg-error-900/20",
@@ -93,7 +106,7 @@ const Dashboard = () => {
           {t(translations.dashboard)}
         </h1>
         <p className="text-text-secondary-light dark:text-text-secondary-dark mt-2">
-          {t(translations.systemOverview)}
+          {t({ en: "System Overview", ar: "نظرة عامة على النظام" })}
         </p>
       </div>
 
@@ -129,7 +142,7 @@ const Dashboard = () => {
       {/* Recent Activity & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Expiring Subscriptions Alert */}
-        {expiringSoonClients.length > 0 && (
+        {expiringSoonTenants.length > 0 && (
           <div className="card p-6">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-6 h-6 text-warning-600" />
@@ -141,38 +154,38 @@ const Dashboard = () => {
               </h2>
             </div>
             <div className="space-y-4">
-              {expiringSoonClients.map((client) => (
+              {expiringSoonTenants.map((tenant) => (
                 <div
-                  key={client.id}
+                  key={tenant.id}
                   className="flex items-center justify-between p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800"
                 >
                   <div>
                     <h3 className="font-medium text-text-primary-light dark:text-text-primary-dark">
-                      {client.name}
+                      {tenant.english_name || tenant.arabic_name}
                     </h3>
                     <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                      {client.email}
+                      {tenant.subdomain}
                     </p>
                   </div>
-                  <SubscriptionStatus client={client} />
+                  <SubscriptionStatus client={tenant} />
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Recent Clients */}
+        {/* Recent Tenants */}
         <div className="card p-6">
           <div className="flex items-center gap-3 mb-4">
             <TrendingUp className="w-6 h-6 text-primary-600" />
             <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">
-              {t(translations.recentActivity)}
+              {t({ en: "Recent Activity", ar: "النشاط الأخير" })}
             </h2>
           </div>
           <div className="space-y-4">
-            {clients.slice(0, 5).map((client) => (
+            {safeTenants.slice(0, 5).map((tenant) => (
               <div
-                key={client.id}
+                key={tenant.id}
                 className="flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
@@ -181,15 +194,17 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <h3 className="font-medium text-text-primary-light dark:text-text-primary-dark">
-                      {client.name}
+                      {tenant.english_name || tenant.arabic_name}
                     </h3>
                     <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                      {client.branches.length} {t(translations.branches)} •{" "}
-                      {client.numberOfUsers || 0} {t(translations.users)}
+                      {tenant.no_branches || 0}{" "}
+                      {t({ en: "branches", ar: "فروع" })} •{" "}
+                      {tenant.no_users || 0}{" "}
+                      {t({ en: "users", ar: "مستخدمين" })}
                     </p>
                   </div>
                 </div>
-                <SubscriptionStatus client={client} />
+                <SubscriptionStatus client={tenant} />
               </div>
             ))}
           </div>

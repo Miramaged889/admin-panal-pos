@@ -6,9 +6,11 @@ import { translations } from "../../constants/translations";
 const SubscriptionStatus = ({ client, showDetails = false }) => {
   const { t } = useLanguage();
 
-  const isExpired = new Date() > new Date(client.subscriptionEnd);
+  const isExpired =
+    new Date() > new Date(client.End_Date || client.subscriptionEnd);
   const daysUntilExpiry = Math.ceil(
-    (new Date(client.subscriptionEnd) - new Date()) / (1000 * 60 * 60 * 24)
+    (new Date(client.End_Date || client.subscriptionEnd) - new Date()) /
+      (1000 * 60 * 60 * 24)
   );
   const isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
 
@@ -104,8 +106,8 @@ const SubscriptionStatus = ({ client, showDetails = false }) => {
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             <span>
-              {formatDate(client.subscriptionStart)} -{" "}
-              {formatDate(client.subscriptionEnd)}
+              {formatDate(client.Start_Date || client.subscriptionStart)} -{" "}
+              {formatDate(client.End_Date || client.subscriptionEnd)}
             </span>
           </div>
           <div className="text-xs">{getDaysText()}</div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -16,7 +16,19 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
-import useStore from "../store/useStore";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  selectTenantsList,
+  selectTenantsLoading,
+  selectTenantsError,
+  selectTenantsSuccess,
+} from "../store/selectors";
+import {
+  fetchTenants,
+  deleteClient,
+  clearClientsError,
+  clearClientsSuccess,
+} from "../store/actions";
 import Modal from "../components/UI/Modal";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 import ClientForm from "../components/Forms/ClientForm";
@@ -24,7 +36,11 @@ import { toast } from "../components/UI/Toast";
 
 const Clients = () => {
   const { t, isRTL } = useLanguage();
-  const { clients, deleteClient } = useStore();
+  const dispatch = useAppDispatch();
+  const tenants = useAppSelector(selectTenantsList);
+  const loading = useAppSelector(selectTenantsLoading);
+  const error = useAppSelector(selectTenantsError);
+  const success = useAppSelector(selectTenantsSuccess);
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,14 +50,35 @@ const Clients = () => {
   const [deletingClient, setDeletingClient] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  // Filter clients based on search and status
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch =
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.nameEn?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase());
+  // Fetch tenants on component mount
+  useEffect(() => {
+    dispatch(fetchTenants());
+  }, [dispatch]);
 
-    const isExpired = new Date() > new Date(client.subscriptionEnd);
+  // Handle success messages
+  useEffect(() => {
+    if (success) {
+      toast.success(t({ en: success, ar: success }));
+      dispatch(clearClientsSuccess());
+    }
+  }, [success, dispatch, t]);
+
+  // Handle error messages
+  useEffect(() => {
+    if (error) {
+      toast.error(t({ en: error, ar: error }));
+      dispatch(clearClientsError());
+    }
+  }, [error, dispatch, t]);
+
+  // Filter tenants based on search and status
+  const filteredClients = tenants.filter((client) => {
+    const matchesSearch =
+      client.arabic_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.english_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.subdomain?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const isExpired = new Date() > new Date(client.End_Date);
     const matchesStatus =
       statusFilter === "all" ||
       (statusFilter === "active" && !isExpired) ||
@@ -50,12 +87,15 @@ const Clients = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteClient = () => {
+  const handleDeleteClient = async () => {
     if (deletingClient) {
-      deleteClient(deletingClient.id);
-      toast.success(t(translations.clientDeleted));
-      setDeletingClient(null);
-      setActiveDropdown(null);
+      try {
+        await dispatch(deleteClient(deletingClient.id)).unwrap();
+        setDeletingClient(null);
+        setActiveDropdown(null);
+      } catch (error) {
+        console.log(error);
+      }
     }
   };
 
@@ -80,10 +120,12 @@ const Clients = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
-                {isRTL ? client.name : client.nameEn || client.name}
+                {isRTL
+                  ? client.arabic_name
+                  : client.english_name || client.arabic_name}
               </h3>
               <p className="text-text-secondary-light dark:text-text-secondary-dark">
-                {client.email}
+                {client.subdomain}
               </p>
             </div>
           </div>
@@ -143,30 +185,15 @@ const Clients = () => {
 
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
-            <Phone className="w-4 h-4" />
-            {client.phone}
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
             <Building className="w-4 h-4" />
-            {client.branches.length} {t(translations.branches)}
+            {client.no_branches || 0} {t(translations.branches)}
           </div>
 
           {/* Number of Users */}
-          {client.numberOfUsers && (
+          {client.no_users && (
             <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
               <Users className="w-4 h-4" />
-              {client.numberOfUsers} {t(translations.users)}
-            </div>
-          )}
-
-          {/* Client Manager */}
-          {client.manager?.name && (
-            <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
-              <User className="w-4 h-4" />
-              {isRTL
-                ? client.manager.name
-                : client.manager.nameEn || client.manager.name}
+              {client.no_users} {t(translations.users)}
             </div>
           )}
 
@@ -176,7 +203,7 @@ const Clients = () => {
               <Package className="w-4 h-4 text-primary-600" />
               <span
                 className={
-                  client.subscriptionOptions?.ketchin
+                  client.modules_enabled?.kitchen
                     ? "text-success-600"
                     : "text-text-muted-light dark:text-text-muted-dark"
                 }
@@ -188,7 +215,7 @@ const Clients = () => {
               <Truck className="w-4 h-4 text-primary-600" />
               <span
                 className={
-                  client.subscriptionOptions?.delivery
+                  client.modules_enabled?.Delivery
                     ? "text-success-600"
                     : "text-text-muted-light dark:text-text-muted-dark"
                 }
@@ -259,14 +286,24 @@ const Clients = () => {
         </select>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-text-secondary-light dark:text-text-secondary-dark">
+            {t({ en: "Loading clients...", ar: "جاري تحميل العملاء..." })}
+          </p>
+        </div>
+      )}
+
       {/* Clients Grid */}
-      {filteredClients.length > 0 ? (
+      {!loading && filteredClients.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
             <ClientCard key={client.id} client={client} />
           ))}
         </div>
-      ) : (
+      ) : !loading ? (
         <div className="text-center py-12">
           <Users className="w-16 h-16 text-text-muted-light dark:text-text-muted-dark mx-auto mb-4" />
           <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
@@ -294,7 +331,7 @@ const Clients = () => {
             </button>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Add/Edit Client Modal */}
       <Modal
