@@ -4,6 +4,7 @@ export {
   loginSaaSAdmin,
   logoutSaaSAdmin,
   getCurrentUser,
+  initializeAuth,
   clearError as clearAuthError,
   logout as logoutAction,
 } from "./slices/authSlice";
@@ -13,6 +14,7 @@ export {
   fetchClients,
   fetchTenants,
   createTenant,
+  updateTenant,
   createClient,
   updateClient,
   deleteClient,
@@ -45,6 +47,19 @@ export {
   clearSuccess as clearTenantUsersSuccess,
   setCurrentTenantUser,
 } from "./slices/tenantUsersSlice";
+
+export {
+  // Managers actions
+  fetchManagers,
+  createManager,
+  updateManager,
+  deleteManager,
+  getManagerById,
+  clearError as clearManagersError,
+  clearSuccess as clearManagersSuccess,
+  setCurrentManager,
+  clearManagers,
+} from "./slices/managersSlice";
 
 // Action types for reference
 export const ACTION_TYPES = {

@@ -76,3 +76,17 @@ export const selectTenantUserById = createSelector(
   [selectTenantUsersList, (state, userId) => userId],
   (users, userId) => users.find((user) => user.id === userId)
 );
+
+// Managers selectors
+export const selectManagers = (state) => state.managers;
+export const selectManagersList = (state) => state.managers.managers;
+export const selectCurrentManager = (state) => state.managers.currentManager;
+export const selectManagersLoading = (state) => state.managers.loading;
+export const selectManagersError = (state) => state.managers.error;
+export const selectManagersSuccess = (state) => state.managers.success;
+
+// Manager by ID selector with memoization
+export const selectManagerById = createSelector(
+  [selectManagersList, (state, managerId) => managerId],
+  (managers, managerId) => managers.find((manager) => manager.id === managerId)
+);

@@ -2,16 +2,14 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.DEV
-    ? ""
-    : "https://pos-backend-mujwh.ondigitalocean.app",
+  baseURL: import.meta.env.DEV ? "" : "https://detalls-sa.com/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and debugging
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
@@ -22,6 +20,22 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error("API Request Error:", error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error(
+      "API Response Error:",
+      error.response?.status,
+      error.response?.data
+    );
     return Promise.reject(error);
   }
 );

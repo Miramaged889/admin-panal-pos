@@ -90,6 +90,22 @@ export const createClient = createAsyncThunk(
   }
 );
 
+export const updateTenant = createAsyncThunk(
+  "clients/updateTenant",
+  async ({ id, tenantData }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/ten/tenants/${id}/`, tenantData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || "Failed to update tenant",
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  }
+);
+
 export const updateClient = createAsyncThunk(
   "clients/updateClient",
   async ({ id, clientData }, { rejectWithValue }) => {
@@ -228,6 +244,28 @@ const clientsSlice = createSlice({
           action.payload?.message ||
           action.error?.message ||
           "Failed to create client";
+      })
+      // Update tenant
+      .addCase(updateTenant.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateTenant.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.tenants.findIndex(
+          (tenant) => tenant.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.tenants[index] = action.payload;
+        }
+        state.success = "Tenant updated successfully";
+      })
+      .addCase(updateTenant.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload?.message ||
+          action.error?.message ||
+          "Failed to update tenant";
       })
       // Update client
       .addCase(updateClient.pending, (state) => {

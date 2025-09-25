@@ -12,8 +12,10 @@ import {
 } from "../../store/selectors";
 import {
   createTenant,
+  updateTenant,
   createClient,
   createTenantUser,
+  updateManager,
   clearClientsError,
   clearClientsSuccess,
   clearTenantUsersError,
@@ -22,7 +24,13 @@ import {
 import DatePicker from "../UI/DatePicker";
 import { toast } from "../UI/Toast";
 
-const ClientForm = ({ client, onClose, isEditMode = false }) => {
+const ClientForm = ({
+  client,
+  onClose,
+  isEditMode = false,
+  onUpdate,
+  initialStage = 1,
+}) => {
   const { t } = useLanguage();
   const dispatch = useAppDispatch();
 
@@ -78,7 +86,7 @@ const ClientForm = ({ client, onClose, isEditMode = false }) => {
   });
 
   const [errors, setErrors] = useState({});
-  const [currentStage, setCurrentStage] = useState(1); // 1, 2, or 3
+  const [currentStage, setCurrentStage] = useState(initialStage); // 1, 2, or 3
   const [submittedData, setSubmittedData] = useState({
     tenant: null,
     client: null,
@@ -118,6 +126,11 @@ const ClientForm = ({ client, onClose, isEditMode = false }) => {
       });
     }
   }, [client]);
+
+  // Update currentStage when initialStage prop changes
+  useEffect(() => {
+    setCurrentStage(initialStage);
+  }, [initialStage]);
 
   // Handle success messages
   useEffect(() => {
@@ -372,12 +385,6 @@ const ClientForm = ({ client, onClose, isEditMode = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // In edit mode, just close the form without making API calls
-    if (isEditMode) {
-      onClose();
-      return;
-    }
-
     if (currentStage < 3) {
       await handleNextStage();
       return;
@@ -386,30 +393,98 @@ const ClientForm = ({ client, onClose, isEditMode = false }) => {
     if (!validateStage3()) return;
 
     try {
-      // Submit manager data to /api/saas/addtenantusers/
-      const managerData = {
-        username: formData.manager_username.trim(),
-        email: formData.manager_email.trim(),
-        password: formData.manager_password,
-        role: formData.manager_role,
-        schema:
-          submittedData.tenant?.subdomain || String(submittedData.tenant?.id), // Use subdomain first, then convert ID to string
-      };
+      if (isEditMode) {
+        // Update existing tenant
+        const tenantData = {
+          id: client.id,
+          arabic_name: formData.arabic_name.trim(),
+          english_name: formData.english_name.trim(),
+          Commercial_Record: formData.Commercial_Record
+            ? parseInt(formData.Commercial_Record)
+            : 123,
+          Activity_Type:
+            formData.Activity_Type === "other"
+              ? formData.otherActivityType.trim() || "other"
+              : formData.Activity_Type,
+          no_users: formData.no_users ? parseInt(formData.no_users) : 1,
+          no_branches: formData.no_branches
+            ? parseInt(formData.no_branches)
+            : 1,
+          Subscription_Price: formData.Subscription_Price || "767.23",
+          Currency: formData.Currency,
+          on_trial: formData.on_trial,
+          is_active: formData.is_active,
+          Start_Date: formData.Start_Date || "2025-08-01",
+          End_Date: formData.End_Date || "2030-01-01",
+          modules_enabled: {
+            kitchen: formData.modules_enabled.kitchen,
+            Delivery: formData.modules_enabled.Delivery,
+          },
+          subdomain: formData.subdomain.trim(),
+          image: null,
+        };
 
-      console.log("🚀 About to create manager with data:", managerData);
-      console.log("📋 Tenant data available:", submittedData.tenant);
-      await dispatch(createTenantUser(managerData)).unwrap();
+        console.log("🚀 About to update tenant with data:", tenantData);
+        await dispatch(updateTenant({ id: client.id, tenantData })).unwrap();
 
-      // Form is complete, success message will be shown and form will close
+        // Update manager if there's manager data
+        if (
+          formData.manager_username &&
+          formData.manager_email &&
+          formData.manager_password
+        ) {
+          const managerData = {
+            username: formData.manager_username.trim(),
+            email: formData.manager_email.trim(),
+            password: formData.manager_password,
+            role: formData.manager_role,
+          };
+
+          console.log("🚀 About to update manager with data:", managerData);
+          await dispatch(
+            updateManager({
+              subdomain: client.subdomain,
+              id: client.manager_id || 1, // Assuming there's a manager_id field
+              managerData,
+            })
+          ).unwrap();
+        }
+
+        toast.success(
+          t({ en: "Client updated successfully", ar: "تم تحديث العميل بنجاح" })
+        );
+        if (onUpdate) onUpdate();
+        onClose();
+      } else {
+        // Create new manager data to /api/saas/addtenantusers/
+        const managerData = {
+          username: formData.manager_username.trim(),
+          email: formData.manager_email.trim(),
+          password: formData.manager_password,
+          role: formData.manager_role,
+          schema:
+            submittedData.tenant?.subdomain || String(submittedData.tenant?.id), // Use subdomain first, then convert ID to string
+        };
+
+        console.log("🚀 About to create manager with data:", managerData);
+        console.log("📋 Tenant data available:", submittedData.tenant);
+        await dispatch(createTenantUser(managerData)).unwrap();
+
+        // Form is complete, success message will be shown and form will close
+      }
     } catch (error) {
-      console.error("❌ Failed to create manager:", error);
+      console.error("❌ Failed to submit:", error);
 
       // Show user-friendly error message
       toast.error(
         error.message ||
           t({
-            en: "Failed to create manager. Please check your data and try again.",
-            ar: "فشل في إنشاء المدير. يرجى التحقق من البيانات والمحاولة مرة أخرى.",
+            en: isEditMode
+              ? "Failed to update client. Please check your data and try again."
+              : "Failed to create manager. Please check your data and try again.",
+            ar: isEditMode
+              ? "فشل في تحديث العميل. يرجى التحقق من البيانات والمحاولة مرة أخرى."
+              : "فشل في إنشاء المدير. يرجى التحقق من البيانات والمحاولة مرة أخرى.",
           })
       );
     }

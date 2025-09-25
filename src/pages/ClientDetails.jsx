@@ -20,8 +20,19 @@ import {
 import { useLanguage } from "../contexts/LanguageContext";
 import { translations } from "../constants/translations";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { selectTenantsList, selectTenantsLoading } from "../store/selectors";
-import { fetchTenants, deleteClient } from "../store/actions";
+import {
+  selectTenantsList,
+  selectTenantsLoading,
+  selectManagersList,
+  selectManagersLoading,
+} from "../store/selectors";
+import {
+  fetchTenants,
+  deleteClient,
+  fetchManagers,
+  updateManager,
+  updateTenant,
+} from "../store/actions";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 import Modal from "../components/UI/Modal";
 import ClientForm from "../components/Forms/ClientForm";
@@ -34,16 +45,55 @@ const ClientDetails = () => {
   const dispatch = useAppDispatch();
   const tenants = useAppSelector(selectTenantsList);
   const loading = useAppSelector(selectTenantsLoading);
+  const managers = useAppSelector(selectManagersList);
+  const managersLoading = useAppSelector(selectManagersLoading);
   const client = tenants.find((tenant) => tenant.id === parseInt(id));
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({});
+  const [editMode, setEditMode] = useState("tenant"); // 'tenant' or 'manager'
 
   useEffect(() => {
     if (!tenants.length) {
       dispatch(fetchTenants());
     }
   }, [dispatch, tenants.length]);
+
+  // Fetch managers when client data is available
+  useEffect(() => {
+    if (client?.subdomain) {
+      dispatch(fetchManagers(client.subdomain));
+    }
+  }, [dispatch, client?.subdomain]);
+
+  // Toggle password visibility for specific manager
+  const togglePasswordVisibility = (managerId) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [managerId]: !prev[managerId],
+    }));
+  };
+
+  // Refresh data after updates
+  const refreshData = () => {
+    if (client?.subdomain) {
+      dispatch(fetchManagers(client.subdomain));
+    }
+    dispatch(fetchTenants());
+  };
+
+  // Handle opening edit modal for tenant
+  const handleEditTenant = () => {
+    setEditMode("tenant");
+    setIsEditModalOpen(true);
+  };
+
+  // Handle opening edit modal for manager
+  const handleEditManager = () => {
+    setEditMode("manager");
+    setIsEditModalOpen(true);
+  };
 
   const handleDelete = async () => {
     try {
@@ -139,7 +189,7 @@ const ClientDetails = () => {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => setIsEditModalOpen(true)}
+            onClick={handleEditTenant}
             className="btn-primary flex items-center gap-2"
           >
             <Edit className="w-4 h-4" />
@@ -371,114 +421,167 @@ const ClientDetails = () => {
         <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
           {t({ en: "Manager Information", ar: "معلومات المدير" })}
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                {t({ en: "Manager Username", ar: "اسم مستخدم المدير" })}
-              </label>
-              <p className="text-text-primary-light dark:text-text-primary-dark">
-                {client.manager_username ||
-                  t({ en: "Not set", ar: "غير محدد" })}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                {t({ en: "Manager Email", ar: "بريد المدير" })}
-              </label>
-              <p className="text-text-primary-light dark:text-text-primary-dark">
-                {client.manager_email || t({ en: "Not set", ar: "غير محدد" })}
-              </p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                {t({ en: "Manager Role", ar: "دور المدير" })}
-              </label>
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-primary-600" />
-                <span className="text-text-primary-light dark:text-text-primary-dark capitalize">
-                  {client.manager_role || t({ en: "Not set", ar: "غير محدد" })}
-                </span>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                {t({ en: "Access Level", ar: "مستوى الوصول" })}
-              </label>
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    client.manager_role === "admin"
-                      ? "bg-success-500"
-                      : client.manager_role === "manager"
-                      ? "bg-warning-500"
-                      : "bg-text-muted-light dark:bg-text-muted-dark"
-                  }`}
-                />
-                <span
-                  className={`text-sm font-medium ${
-                    client.manager_role === "admin"
-                      ? "text-success-600"
-                      : client.manager_role === "manager"
-                      ? "text-warning-600"
-                      : "text-text-muted-light dark:text-text-muted-dark"
-                  }`}
-                >
-                  {client.manager_role === "admin"
-                    ? t({ en: "Full Access", ar: "وصول كامل" })
-                    : client.manager_role === "manager"
-                    ? t({ en: "Limited Access", ar: "وصول محدود" })
-                    : t({ en: "Basic Access", ar: "وصول أساسي" })}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Manager Actions */}
-        <div className="mt-6 pt-6 border-t border-border-light dark:border-border-dark">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                {t({ en: "Manager Actions", ar: "إجراءات المدير" })}
-              </h3>
-              <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
-                {t({
-                  en: "Manage manager access and permissions",
-                  ar: "إدارة وصول المدير والأذونات",
-                })}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                {t({ en: "Edit Manager", ar: "تعديل المدير" })}
-              </button>
-              <button className="btn-outline flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                {t({ en: "View Details", ar: "عرض التفاصيل" })}
-              </button>
-            </div>
+        {managersLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
           </div>
-        </div>
+        ) : managers.length > 0 ? (
+          <div className="space-y-6">
+            {managers.map((manager, index) => (
+              <div
+                key={manager.id}
+                className="border border-border-light dark:border-border-dark rounded-lg p-4"
+              >
+                {managers.length > 1 && (
+                  <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-3">
+                    {t({ en: `Manager ${index + 1}`, ar: `مدير ${index + 1}` })}
+                  </h3>
+                )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Username", ar: "اسم المستخدم" })}
+                      </label>
+                      <p className="text-text-primary-light dark:text-text-primary-dark">
+                        {manager.username}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Email", ar: "البريد الإلكتروني" })}
+                      </label>
+                      <p className="text-text-primary-light dark:text-text-primary-dark">
+                        {manager.email}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Password", ar: "كلمة المرور" })}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Role", ar: "الدور" })}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-primary-600" />
+                        <span className="text-text-primary-light dark:text-text-primary-dark">
+                          {manager.role}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Status", ar: "الحالة" })}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            manager.is_active
+                              ? "bg-success-500"
+                              : "bg-error-500"
+                          }`}
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            manager.is_active
+                              ? "text-success-600"
+                              : "text-error-600"
+                          }`}
+                        >
+                          {manager.is_active
+                            ? t({ en: "Active", ar: "نشط" })
+                            : t({ en: "Inactive", ar: "غير نشط" })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Manager Actions */}
+                <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Manager Actions", ar: "إجراءات المدير" })}
+                      </h3>
+                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                        {t({
+                          en: "Manage manager access and permissions",
+                          ar: "إدارة وصول المدير والأذونات",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleEditManager}
+                        className="btn-secondary flex items-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        {t({ en: "Edit Manager", ar: "تعديل المدير" })}
+                      </button>
+                      <button className="btn-outline flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        {t({ en: "View Details", ar: "عرض التفاصيل" })}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Users className="w-12 h-12 text-text-muted-light dark:text-text-muted-dark mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+              {t({ en: "No Managers Found", ar: "لم يتم العثور على مديرين" })}
+            </h3>
+            <p className="text-text-secondary-light dark:text-text-secondary-dark mb-4">
+              {t({
+                en: "This client doesn't have any managers assigned yet.",
+                ar: "هذا العميل لا يحتوي على مديرين بعد.",
+              })}
+            </p>
+            <button
+              onClick={handleEditManager}
+              className="btn-primary flex items-center gap-2 mx-auto"
+            >
+              <User className="w-4 h-4" />
+              {t({ en: "Add Manager", ar: "إضافة مدير" })}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        title={t(translations.editClient)}
+        title={
+          editMode === "manager"
+            ? t({ en: "Edit Manager", ar: "تعديل المدير" })
+            : t(translations.editClient)
+        }
         size="lg"
       >
         <ClientForm
-          client={client}
+          client={{
+            ...client,
+            // Add manager data to client object for editing
+            manager_username: managers[0]?.username || client.manager_username,
+            manager_email: managers[0]?.email || client.manager_email,
+            manager_password: managers[0]?.password || client.manager_password,
+            manager_role: managers[0]?.role || client.manager_role,
+            manager_id: managers[0]?.id,
+          }}
           onClose={() => setIsEditModalOpen(false)}
           isEditMode={true}
+          onUpdate={refreshData}
+          initialStage={editMode === "manager" ? 3 : 1}
         />
       </Modal>
 

@@ -6,7 +6,7 @@ export const loginSaaSAdmin = createAsyncThunk(
   "auth/loginSaaSAdmin",
   async (credentials, { rejectWithValue }) => {
     try {
-        const response = await api.post("api/saas/login/", credentials);
+      const response = await api.post("api/saas/login/", credentials);
 
       const { token } = response.data;
 
@@ -16,9 +16,7 @@ export const loginSaaSAdmin = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      // Handle different types of errors
       if (error.response) {
-        // Server responded with error status
         return rejectWithValue({
           message:
             error.response.data?.message ||
@@ -66,7 +64,7 @@ export const getCurrentUser = createAsyncThunk(
   "auth/getCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.post("/api/saas/me/");
+      const response = await api.get("/api/saas/me/");
       return response.data;
     } catch (error) {
       return rejectWithValue({
@@ -78,12 +76,55 @@ export const getCurrentUser = createAsyncThunk(
   }
 );
 
-const initialState = {
-  user: null,
-  isAuthenticated: false,
-  loading: false,
-  error: null,
+export const initializeAuth = createAsyncThunk(
+  "auth/initializeAuth",
+  async (_, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const state = getState();
+      const accessToken = localStorage.getItem("access_token");
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      // If we have tokens but no user data, fetch user info
+      if (accessToken && refreshToken && !state.auth.user) {
+        const result = await dispatch(getCurrentUser());
+        if (getCurrentUser.fulfilled.match(result)) {
+          return result.payload;
+        } else {
+          // If fetching user fails, clear tokens
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          return rejectWithValue("Invalid tokens");
+        }
+      }
+
+      return null;
+    } catch {
+      // Clear invalid tokens
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      return rejectWithValue({
+        message: "Authentication initialization failed",
+        status: 0,
+        data: null,
+      });
+    }
+  }
+);
+
+// Check for existing tokens on initialization
+const getInitialAuthState = () => {
+  const accessToken = localStorage.getItem("access_token");
+  const refreshToken = localStorage.getItem("refresh_token");
+
+  return {
+    user: null,
+    isAuthenticated: !!accessToken && !!refreshToken,
+    loading: false,
+    error: null,
+  };
 };
+
+const initialState = getInitialAuthState();
 
 const authSlice = createSlice({
   name: "auth",
@@ -147,6 +188,24 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
+      })
+      // Initialize auth
+      .addCase(initializeAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload) {
+          state.user = action.payload;
+          state.isAuthenticated = true;
+        }
+        state.error = null;
+      })
+      .addCase(initializeAuth.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
       });
   },
 });

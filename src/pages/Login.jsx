@@ -22,7 +22,6 @@ import {
 import { loginSaaSAdmin, clearAuthError } from "../store/actions";
 import { toast } from "../components/UI/Toast";
 
-
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -86,7 +85,10 @@ const Login = () => {
       );
       navigate("/dashboard");
     } catch (error) {
-      console.log(error);
+      toast.error(
+        t({ en: "Login failed!", ar: "فشل تسجيل الدخول!" })
+      );
+      console.error("Login failed:", error);
     }
   };
 
@@ -137,7 +139,6 @@ const Login = () => {
               {t(translations.enterCredentials)}
             </p>
           </div>
-
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">

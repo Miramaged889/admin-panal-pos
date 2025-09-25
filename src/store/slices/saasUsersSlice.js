@@ -1,63 +1,71 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../services/api";
 
 // Async thunks
 export const fetchSaasUsers = createAsyncThunk(
-  'saasUsers/fetchSaasUsers',
+  "saasUsers/fetchSaasUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/saas/users/');
+      const response = await api.get("/api/saas/users/");
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch SaaS users');
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch SaaS users"
+      );
     }
   }
 );
 
 export const createSaasUser = createAsyncThunk(
-  'saasUsers/createSaasUser',
+  "saasUsers/createSaasUser",
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/api/saas/users/', userData);
+      const response = await api.post("/api/saas/users/", userData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to create SaaS user');
+      return rejectWithValue(
+        error.response?.data || "Failed to create SaaS user"
+      );
     }
   }
 );
 
 export const updateSaasUser = createAsyncThunk(
-  'saasUsers/updateSaasUser',
+  "saasUsers/updateSaasUser",
   async ({ id, userData }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/api/saas/users/${id}/`, userData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to update SaaS user');
+      return rejectWithValue(
+        error.response?.data || "Failed to update SaaS user"
+      );
     }
   }
 );
 
 export const deleteSaasUser = createAsyncThunk(
-  'saasUsers/deleteSaasUser',
+  "saasUsers/deleteSaasUser",
   async (id, { rejectWithValue }) => {
     try {
       await api.delete(`/api/saas/users/${id}/`);
       return id;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to delete SaaS user');
+      return rejectWithValue(
+        error.response?.data || "Failed to delete SaaS user"
+      );
     }
   }
 );
 
 export const getSaasUserById = createAsyncThunk(
-  'saasUsers/getSaasUserById',
+  "saasUsers/getSaasUserById",
   async (id, { rejectWithValue }) => {
     try {
       const response = await api.get(`/api/saas/users/${id}/`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to get SaaS user');
+      return rejectWithValue(error.response?.data || "Failed to get SaaS user");
     }
   }
 );
@@ -71,7 +79,7 @@ const initialState = {
 };
 
 const saasUsersSlice = createSlice({
-  name: 'saasUsers',
+  name: "saasUsers",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -107,7 +115,7 @@ const saasUsersSlice = createSlice({
       .addCase(createSaasUser.fulfilled, (state, action) => {
         state.loading = false;
         state.users.push(action.payload);
-        state.success = 'SaaS user created successfully';
+        state.success = "SaaS user created successfully";
       })
       .addCase(createSaasUser.rejected, (state, action) => {
         state.loading = false;
@@ -120,11 +128,13 @@ const saasUsersSlice = createSlice({
       })
       .addCase(updateSaasUser.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.users.findIndex(user => user.id === action.payload.id);
+        const index = state.users.findIndex(
+          (user) => user.id === action.payload.id
+        );
         if (index !== -1) {
           state.users[index] = action.payload;
         }
-        state.success = 'SaaS user updated successfully';
+        state.success = "SaaS user updated successfully";
       })
       .addCase(updateSaasUser.rejected, (state, action) => {
         state.loading = false;
@@ -137,8 +147,8 @@ const saasUsersSlice = createSlice({
       })
       .addCase(deleteSaasUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = state.users.filter(user => user.id !== action.payload);
-        state.success = 'SaaS user deleted successfully';
+        state.users = state.users.filter((user) => user.id !== action.payload);
+        state.success = "SaaS user deleted successfully";
       })
       .addCase(deleteSaasUser.rejected, (state, action) => {
         state.loading = false;
@@ -160,5 +170,6 @@ const saasUsersSlice = createSlice({
   },
 });
 
-export const { clearError, clearSuccess, setCurrentUser } = saasUsersSlice.actions;
+export const { clearError, clearSuccess, setCurrentUser } =
+  saasUsersSlice.actions;
 export default saasUsersSlice.reducer;

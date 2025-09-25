@@ -7,17 +7,17 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://pos-backend-mujwh.ondigitalocean.app",
+        target: "https://detalls-sa.com",
         changeOrigin: true,
         secure: true,
       },
       "/ten": {
-        target: "https://pos-backend-mujwh.ondigitalocean.app",
+        target: "https://detalls-sa.com",
         changeOrigin: true,
         secure: true,
       },
       "/tenuser": {
-        target: "https://pos-backend-mujwh.ondigitalocean.app",
+        target: "https://detalls-sa.com",
         changeOrigin: true,
         secure: true,
       },
