@@ -2,11 +2,12 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? "" : "https://detalls-sa.com",
+  baseURL: "", // Use relative URLs - Netlify will proxy to backend
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: false,
 });
 
 // Request interceptor to add auth token and debugging
