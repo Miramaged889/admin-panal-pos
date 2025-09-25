@@ -18,12 +18,9 @@ export const fetchManagers = createAsyncThunk(
 
 export const createManager = createAsyncThunk(
   "managers/createManager",
-  async ({ subdomain, managerData }, { rejectWithValue }) => {
+  async ({ managerData }, { rejectWithValue }) => {
     try {
-      const response = await api.post(
-        `/api/saas/managers/?schema=${subdomain}`,
-        managerData
-      );
+      const response = await api.post(`api/saas/addtenantusers/`, managerData);
       return response.data;
     } catch (error) {
       return rejectWithValue(

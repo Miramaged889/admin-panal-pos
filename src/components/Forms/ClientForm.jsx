@@ -94,8 +94,6 @@ const ClientForm = ({
 
   useEffect(() => {
     if (client) {
-      console.log("🔍 Initializing form with client data:", client);
-      console.log("🔍 Number of branches from client:", client.no_branches);
       setFormData({
         arabic_name: client.arabic_name || "",
         english_name: client.english_name || "",
@@ -445,10 +443,6 @@ const ClientForm = ({
           image: null,
         };
 
-        console.log("🚀 About to update tenant with data:", tenantData);
-        console.log("📊 Original client data for reference:", client);
-        console.log("📊 Form data no_branches:", formData.no_branches);
-        console.log("📊 Tenant data no_branches:", tenantData.no_branches);
         await dispatch(updateTenant({ id: client.id, tenantData })).unwrap();
 
         // Update manager if there's manager data
@@ -464,7 +458,6 @@ const ClientForm = ({
             role: formData.manager_role,
           };
 
-          console.log("🚀 About to update manager with data:", managerData);
           await dispatch(
             updateManager({
               subdomain: client.subdomain,
