@@ -94,6 +94,8 @@ const ClientForm = ({
 
   useEffect(() => {
     if (client) {
+      console.log("🔍 Initializing form with client data:", client);
+      console.log("🔍 Number of branches from client:", client.no_branches);
       setFormData({
         arabic_name: client.arabic_name || "",
         english_name: client.english_name || "",
@@ -394,37 +396,59 @@ const ClientForm = ({
 
     try {
       if (isEditMode) {
-        // Update existing tenant
+        // Always update tenant data in edit mode, regardless of current stage
         const tenantData = {
           id: client.id,
           arabic_name: formData.arabic_name.trim(),
           english_name: formData.english_name.trim(),
           Commercial_Record: formData.Commercial_Record
             ? parseInt(formData.Commercial_Record)
-            : 123,
+            : client.Commercial_Record || 123,
           Activity_Type:
             formData.Activity_Type === "other"
               ? formData.otherActivityType.trim() || "other"
               : formData.Activity_Type,
-          no_users: formData.no_users ? parseInt(formData.no_users) : 1,
+          no_users: formData.no_users
+            ? parseInt(formData.no_users)
+            : client.no_users || 1,
           no_branches: formData.no_branches
             ? parseInt(formData.no_branches)
-            : 1,
-          Subscription_Price: formData.Subscription_Price || "767.23",
-          Currency: formData.Currency,
-          on_trial: formData.on_trial,
-          is_active: formData.is_active,
-          Start_Date: formData.Start_Date || "2025-08-01",
-          End_Date: formData.End_Date || "2030-01-01",
+            : client.no_branches || 1,
+          Subscription_Price:
+            formData.Subscription_Price ||
+            client.Subscription_Price ||
+            "767.23",
+          Currency: formData.Currency || client.Currency || "SAR",
+          on_trial:
+            formData.on_trial !== undefined
+              ? formData.on_trial
+              : client.on_trial || false,
+          is_active:
+            formData.is_active !== undefined
+              ? formData.is_active
+              : client.is_active !== undefined
+              ? client.is_active
+              : true,
+          Start_Date: formData.Start_Date || client.Start_Date || "2025-08-01",
+          End_Date: formData.End_Date || client.End_Date || "2030-01-01",
           modules_enabled: {
-            kitchen: formData.modules_enabled.kitchen,
-            Delivery: formData.modules_enabled.Delivery,
+            kitchen:
+              formData.modules_enabled?.kitchen !== undefined
+                ? formData.modules_enabled.kitchen
+                : client.modules_enabled?.kitchen ?? true,
+            Delivery:
+              formData.modules_enabled?.Delivery !== undefined
+                ? formData.modules_enabled.Delivery
+                : client.modules_enabled?.Delivery ?? true,
           },
-          subdomain: formData.subdomain.trim(),
+          subdomain: formData.subdomain.trim() || client.subdomain || "",
           image: null,
         };
 
         console.log("🚀 About to update tenant with data:", tenantData);
+        console.log("📊 Original client data for reference:", client);
+        console.log("📊 Form data no_branches:", formData.no_branches);
+        console.log("📊 Tenant data no_branches:", tenantData.no_branches);
         await dispatch(updateTenant({ id: client.id, tenantData })).unwrap();
 
         // Update manager if there's manager data
@@ -492,6 +516,12 @@ const ClientForm = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Debug logging for no_branches field
+    if (name === "no_branches") {
+      console.log("🔍 Updating no_branches field:", value);
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when user starts typing
