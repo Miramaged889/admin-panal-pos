@@ -20,7 +20,7 @@ export const createManager = createAsyncThunk(
   "managers/createManager",
   async ({ managerData }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`api/saas/addtenantusers/`, managerData);
+      const response = await api.post(`/api/saas/addtenantusers/`, managerData);
       return response.data;
     } catch (error) {
       return rejectWithValue(

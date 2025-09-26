@@ -61,15 +61,11 @@ export const createTenant = createAsyncThunk(
 
 export const createClient = createAsyncThunk(
   "clients/createClient",
-  async ({ clientData, tenantId }, { rejectWithValue }) => {
+  async (clientData, { rejectWithValue }) => {
     try {
-      // Add tenant ID to client data
-      const clientDataWithTenant = {
-        ...clientData,
-        tenant: tenantId,
-      };
-
-      const response = await api.post("/ten/clients/", clientDataWithTenant);
+      console.log("🚀 Creating client with data:", clientData);
+      const response = await api.post("/ten/clients/", clientData);
+      console.log("✅ Client created successfully:", response.data);
       return response.data;
     } catch (error) {
       // Log detailed error information
@@ -94,7 +90,7 @@ export const updateTenant = createAsyncThunk(
   "clients/updateTenant",
   async ({ id, tenantData }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/ten/tenants/${id}/`, tenantData);
+      const response = await api.patch(`/ten/tenants/${id}/`, tenantData);
       return response.data;
     } catch (error) {
       return rejectWithValue({

@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: "", // Use relative URLs - Netlify will proxy to backend
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds
   headers: {
     "Content-Type": "application/json",
   },
@@ -21,7 +21,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("API Request Error:", error);
+    console.error("❌ API Request Error:", error);
     return Promise.reject(error);
   }
 );
@@ -32,11 +32,18 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error(
-      "API Response Error:",
-      error.response?.status,
-      error.response?.data
-    );
+    console.error("❌ API Response Error:", {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      method: error.config?.method,
+      data: error.response?.data,
+      isCancel: error.name === "CanceledError" || error.code === "ERR_CANCELED",
+      isTimeout: error.code === "ECONNABORTED",
+      isNetwork: !error.response && !error.request,
+    });
     return Promise.reject(error);
   }
 );

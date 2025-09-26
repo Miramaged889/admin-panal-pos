@@ -6,9 +6,23 @@ import { useLanguage } from "../../contexts/LanguageContext";
 let toastStore = {
   toasts: [],
   listeners: [],
+  counter: 0,
   addToast: (toast) => {
-    const id = Date.now().toString();
+    // Generate unique ID using timestamp + counter + random number to avoid duplicates
+    const id = `${Date.now()}-${++toastStore.counter}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     const newToast = { id, ...toast };
+
+    // Check if a toast with the same message already exists to prevent duplicates
+    const existingToast = toastStore.toasts.find(
+      (t) => t.message === toast.message && t.type === toast.type
+    );
+    if (existingToast) {
+      // Remove the existing toast before adding the new one
+      toastStore.removeToast(existingToast.id);
+    }
+
     toastStore.toasts.push(newToast);
     toastStore.listeners.forEach((listener) => listener(toastStore.toasts));
 

@@ -26,13 +26,7 @@ import {
   selectManagersList,
   selectManagersLoading,
 } from "../store/selectors";
-import {
-  fetchTenants,
-  deleteClient,
-  fetchManagers,
-  updateManager,
-  updateTenant,
-} from "../store/actions";
+import { fetchTenants, deleteClient, fetchManagers } from "../store/actions";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 import Modal from "../components/UI/Modal";
 import ClientForm from "../components/Forms/ClientForm";
@@ -51,7 +45,6 @@ const ClientDetails = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [showPasswords, setShowPasswords] = useState({});
   const [editMode, setEditMode] = useState("tenant"); // 'tenant' or 'manager'
 
   useEffect(() => {
@@ -66,14 +59,6 @@ const ClientDetails = () => {
       dispatch(fetchManagers(client.subdomain));
     }
   }, [dispatch, client?.subdomain]);
-
-  // Toggle password visibility for specific manager
-  const togglePasswordVisibility = (managerId) => {
-    setShowPasswords((prev) => ({
-      ...prev,
-      [managerId]: !prev[managerId],
-    }));
-  };
 
   // Refresh data after updates
   const refreshData = () => {
@@ -91,6 +76,7 @@ const ClientDetails = () => {
 
   // Handle opening edit modal for manager
   const handleEditManager = () => {
+    console.log("🔍 Opening manager form with subdomain:", client.subdomain);
     setEditMode("manager");
     setIsEditModalOpen(true);
   };
@@ -572,11 +558,15 @@ const ClientDetails = () => {
           client={{
             ...client,
             // Add manager data to client object for editing
-            manager_username: managers[0]?.username || client.manager_username,
-            manager_email: managers[0]?.email || client.manager_email,
-            manager_password: managers[0]?.password || client.manager_password,
-            manager_role: managers[0]?.role || client.manager_role,
-            manager_id: managers[0]?.id,
+            manager_username:
+              managers[0]?.username || client.manager_username || "",
+            manager_email: managers[0]?.email || client.manager_email || "",
+            manager_password:
+              managers[0]?.password || client.manager_password || "",
+            manager_role: managers[0]?.role || client.manager_role || "manager",
+            manager_id: managers[0]?.id || null,
+            // Ensure subdomain is always available
+            subdomain: client.subdomain,
           }}
           onClose={() => setIsEditModalOpen(false)}
           isEditMode={true}
