@@ -76,7 +76,6 @@ const ClientDetails = () => {
 
   // Handle opening edit modal for manager
   const handleEditManager = () => {
-    console.log("🔍 Opening manager form with subdomain:", client.subdomain);
     setEditMode("manager");
     setIsEditModalOpen(true);
   };
