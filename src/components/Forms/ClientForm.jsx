@@ -14,6 +14,7 @@ import {
   createTenant,
   updateTenant,
   createClient,
+  updateClient,
   clearClientsError,
   clearClientsSuccess,
   clearTenantUsersError,
@@ -33,6 +34,7 @@ const ClientForm = ({
   isEditMode = false,
   onUpdate,
   initialStage = 1,
+  selectedClientRecord = null,
 }) => {
   const { t } = useLanguage();
   const dispatch = useAppDispatch();
@@ -238,12 +240,25 @@ const ClientForm = ({
       }
     }
 
-    if (formData.no_users && isNaN(formData.no_users)) {
-      newErrors.no_users = t(translations.invalidNumber);
+    if (!formData.no_users || formData.no_users === "") {
+      newErrors.no_users = t(translations.required);
+    } else if (isNaN(formData.no_users) || parseInt(formData.no_users) < 1) {
+      newErrors.no_users = t({
+        en: "Number of users must be at least 1",
+        ar: "عدد المستخدمين يجب أن يكون 1 على الأقل",
+      });
     }
 
-    if (formData.no_branches && isNaN(formData.no_branches)) {
-      newErrors.no_branches = t(translations.invalidNumber);
+    if (!formData.no_branches || formData.no_branches === "") {
+      newErrors.no_branches = t(translations.required);
+    } else if (
+      isNaN(formData.no_branches) ||
+      parseInt(formData.no_branches) < 1
+    ) {
+      newErrors.no_branches = t({
+        en: "Number of branches must be at least 1",
+        ar: "عدد الفروع يجب أن يكون 1 على الأقل",
+      });
     }
 
     if (formData.Subscription_Price && isNaN(formData.Subscription_Price)) {
@@ -257,23 +272,13 @@ const ClientForm = ({
   const validateStage2 = () => {
     const newErrors = {};
 
-    // Client validation
-    if (!formData.client_arabic_name.trim()) {
-      newErrors.client_arabic_name = t(translations.required);
-    }
-
-    if (!formData.client_english_name.trim()) {
-      newErrors.client_english_name = t(translations.required);
-    }
-
-    if (!formData.client_email.trim()) {
-      newErrors.client_email = t(translations.required);
-    } else if (!/\S+@\S+\.\S+/.test(formData.client_email)) {
+    // Client validation - all fields are now optional
+    // Only validate email format if email is provided
+    if (
+      formData.client_email.trim() &&
+      !/\S+@\S+\.\S+/.test(formData.client_email)
+    ) {
       newErrors.client_email = t(translations.invalidEmail);
-    }
-
-    if (!formData.client_phone.trim()) {
-      newErrors.client_phone = t(translations.required);
     }
 
     setErrors(newErrors);
@@ -511,63 +516,208 @@ const ClientForm = ({
       }
     } else if (currentStage === 2) {
       if (validateStage2()) {
-        // In edit mode, just move to next stage without API call
+        // If editing a client record directly (not full tenant edit mode)
+        if (selectedClientRecord) {
+          // Update existing client record
+          try {
+            const clientData = {
+              arabic_name: formData.client_arabic_name.trim(),
+              english_name: formData.client_english_name.trim(),
+              email: formData.client_email.trim(),
+              phone: parseInt(formData.client_phone.trim()) || 0,
+              schema: client.subdomain,
+            };
+
+            await dispatch(
+              updateClient({
+                id: selectedClientRecord.id,
+                clientData,
+                schema: client.subdomain,
+              })
+            ).unwrap();
+
+            // Show success message
+            toast.success(
+              t({
+                en: "Client updated successfully!",
+                ar: "تم تحديث العميل بنجاح!",
+              })
+            );
+
+            // Close the form after successful update
+            if (onUpdate) onUpdate();
+            onClose();
+          } catch (error) {
+            // Handle specific client update errors
+            let errorMessage = error.message;
+            if (error.data?.email) {
+              const emailError = error.data.email[0];
+              if (emailError.includes("already exists")) {
+                errorMessage = t({
+                  en: "This email is already registered. Please use a different email.",
+                  ar: "هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام بريد آخر.",
+                });
+              }
+            } else if (error.data?.phone) {
+              const phoneError = error.data.phone[0];
+              if (phoneError.includes("already exists")) {
+                errorMessage = t({
+                  en: "This phone number is already registered. Please use a different phone number.",
+                  ar: "رقم الهاتف هذا مسجل بالفعل. يرجى استخدام رقم آخر.",
+                });
+              }
+            }
+
+            // Show user-friendly error message
+            toast.error(
+              errorMessage ||
+                t({
+                  en: "Failed to update client. Please check your data and try again.",
+                  ar: "فشل في تحديث العميل. يرجى التحقق من البيانات والمحاولة مرة أخرى.",
+                })
+            );
+          }
+          return;
+        }
+
+        // If creating a new client record (no selectedClientRecord)
+        if (!selectedClientRecord && initialStage === 2) {
+          // Create new client record for existing tenant
+          try {
+            const clientData = {
+              tenant: client.id, // Use the current tenant ID
+              arabic_name: formData.client_arabic_name.trim(),
+              english_name: formData.client_english_name.trim(),
+              email: formData.client_email.trim(),
+              phone: parseInt(formData.client_phone.trim()) || 0,
+              schema: client.subdomain,
+            };
+
+            await dispatch(createClient(clientData)).unwrap();
+
+            // Show success message
+            toast.success(
+              t({
+                en: "Client created successfully!",
+                ar: "تم إنشاء العميل بنجاح!",
+              })
+            );
+
+            // Close the form after successful creation
+            if (onUpdate) onUpdate();
+            onClose();
+          } catch (error) {
+            // Handle specific client creation errors
+            let errorMessage = error.message;
+            if (error.data?.email) {
+              const emailError = error.data.email[0];
+              if (emailError.includes("already exists")) {
+                errorMessage = t({
+                  en: "This email is already registered. Please use a different email.",
+                  ar: "هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام بريد آخر.",
+                });
+              }
+            } else if (error.data?.phone) {
+              const phoneError = error.data.phone[0];
+              if (phoneError.includes("already exists")) {
+                errorMessage = t({
+                  en: "This phone number is already registered. Please use a different phone number.",
+                  ar: "رقم الهاتف هذا مسجل بالفعل. يرجى استخدام رقم آخر.",
+                });
+              }
+            }
+
+            // Show user-friendly error message
+            toast.error(
+              errorMessage ||
+                t({
+                  en: "Failed to create client. Please check your data and try again.",
+                  ar: "فشل في إنشاء العميل. يرجى التحقق من البيانات والمحاولة مرة أخرى.",
+                })
+            );
+          }
+          return;
+        }
+
+        // In edit mode for tenant, just move to next stage without API call
         if (isEditMode) {
           setCurrentStage(3);
           return;
         }
-        // Submit client data to /ten/clients/
-        try {
-          const clientData = {
-            tenant: submittedData.tenant.id, // Include tenant ID in the data object
-            arabic_name: formData.client_arabic_name.trim(),
-            english_name: formData.client_english_name.trim(),
-            email: formData.client_email.trim(),
-            phone: formData.client_phone.trim(),
-          };
 
-          const result = await dispatch(createClient(clientData)).unwrap();
+        // Submit client data to /ten/addclients/ using new schema (full tenant creation flow)
+        // Only create client if at least one field is filled
+        const hasClientData =
+          formData.client_arabic_name.trim() ||
+          formData.client_english_name.trim() ||
+          formData.client_email.trim() ||
+          formData.client_phone.trim();
 
-          // Show success message
-          toast.success(
+        if (hasClientData) {
+          try {
+            const clientData = {
+              tenant: submittedData.tenant.id, // Include tenant ID in the data object
+              arabic_name: formData.client_arabic_name.trim(),
+              english_name: formData.client_english_name.trim(),
+              email: formData.client_email.trim(),
+              phone: parseInt(formData.client_phone.trim()) || 0, // Convert to number as per schema
+              schema:
+                submittedData.tenant.subdomain || formData.subdomain.trim(), // Include schema (subdomain)
+            };
+
+            const result = await dispatch(createClient(clientData)).unwrap();
+
+            // Show success message
+            toast.success(
+              t({
+                en: "Client created successfully!",
+                ar: "تم إنشاء العميل بنجاح!",
+              })
+            );
+
+            setSubmittedData((prev) => ({ ...prev, client: result }));
+          } catch (error) {
+            // Handle specific client creation errors
+            let errorMessage = error.message;
+            if (error.data?.email) {
+              const emailError = error.data.email[0];
+              if (emailError.includes("already exists")) {
+                errorMessage = t({
+                  en: "This email is already registered. Please use a different email.",
+                  ar: "هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام بريد آخر.",
+                });
+              }
+            } else if (error.data?.phone) {
+              const phoneError = error.data.phone[0];
+              if (phoneError.includes("already exists")) {
+                errorMessage = t({
+                  en: "This phone number is already registered. Please use a different phone number.",
+                  ar: "رقم الهاتف هذا مسجل بالفعل. يرجى استخدام رقم آخر.",
+                });
+              }
+            }
+
+            // Show user-friendly error message
+            toast.error(
+              errorMessage ||
+                t({
+                  en: "Failed to create client. Please check your data and try again.",
+                  ar: "فشل في إنشاء العميل. يرجى التحقق من البيانات والمحاولة مرة أخرى.",
+                })
+            );
+          }
+        } else {
+          // No client data provided, show info message and proceed to next stage
+          toast.info(
             t({
-              en: "Client created successfully!",
-              ar: "تم إنشاء العميل بنجاح!",
+              en: "Skipping client creation. You can add client information later.",
+              ar: "تخطي إنشاء العميل. يمكنك إضافة معلومات العميل لاحقاً.",
             })
           );
-
-          setSubmittedData((prev) => ({ ...prev, client: result }));
-          setCurrentStage(3);
-        } catch (error) {
-          // Handle specific client creation errors
-          let errorMessage = error.message;
-          if (error.data?.email) {
-            const emailError = error.data.email[0];
-            if (emailError.includes("already exists")) {
-              errorMessage = t({
-                en: "This email is already registered. Please use a different email.",
-                ar: "هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام بريد آخر.",
-              });
-            }
-          } else if (error.data?.phone) {
-            const phoneError = error.data.phone[0];
-            if (phoneError.includes("already exists")) {
-              errorMessage = t({
-                en: "This phone number is already registered. Please use a different phone number.",
-                ar: "رقم الهاتف هذا مسجل بالفعل. يرجى استخدام رقم آخر.",
-              });
-            }
-          }
-
-          // Show user-friendly error message
-          toast.error(
-            errorMessage ||
-              t({
-                en: "Failed to create client. Please check your data and try again.",
-                ar: "فشل في إنشاء العميل. يرجى التحقق من البيانات والمحاولة مرة أخرى.",
-              })
-          );
         }
+
+        // Always move to Stage 3 regardless of whether client was created
+        setCurrentStage(3);
       }
     }
   };
@@ -1125,7 +1275,8 @@ const ClientForm = ({
                 {/* Number of Users */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.numberOfUsers)}
+                    {t(translations.numberOfUsers)}{" "}
+                    <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -1138,7 +1289,8 @@ const ClientForm = ({
                         : ""
                     }`}
                     placeholder={t(translations.numberOfUsers)}
-                    min="0"
+                    min="1"
+                    required
                   />
                   {errors.no_users && (
                     <p className="mt-1 text-sm text-error-600 dark:text-error-400">
@@ -1150,7 +1302,8 @@ const ClientForm = ({
                 {/* Number of Branches */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.numberOfBranches)}
+                    {t(translations.numberOfBranches)}{" "}
+                    <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -1163,7 +1316,8 @@ const ClientForm = ({
                         : ""
                     }`}
                     placeholder={t(translations.numberOfBranches)}
-                    min="0"
+                    min="1"
+                    required
                   />
                   {errors.no_branches && (
                     <p className="mt-1 text-sm text-error-600 dark:text-error-400">
@@ -1224,6 +1378,18 @@ const ClientForm = ({
                     </option>
                     <option value="EUR">
                       {t({ en: "Euro (EUR)", ar: "اليورو (EUR)" })}
+                    </option>
+                    <option value="EGP">
+                      {t({
+                        en: "Egyptian Pound (EGP)",
+                        ar: "الجنية المصري (EGP)",
+                      })}
+                    </option>
+                    <option value="KWD">
+                      {t({
+                        en: "Kuwaiti Dinar (KWD)",
+                        ar: "الدينار الكويتي (KWD)",
+                      })}
                     </option>
                   </select>
                 </div>
@@ -1340,18 +1506,24 @@ const ClientForm = ({
           <>
             {/* Client Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark border-b border-border-light dark:border-border-dark pb-2">
-                {t({
-                  en: "Client Information",
-                  ar: "معلومات العميل",
-                })}
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark border-b border-border-light dark:border-border-dark pb-2">
+                  {t({
+                    en: "Client Information",
+                    ar: "معلومات العميل",
+                  })}
+                </h3>
+                <div className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    {t({ en: "Optional", ar: "اختياري" })}
+                  </span>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Arabic Name */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.clientNameAr)}{" "}
-                    <span className="text-error-500">*</span>
+                    {t(translations.clientNameAr)}
                   </label>
                   <input
                     type="text"
@@ -1376,8 +1548,7 @@ const ClientForm = ({
                 {/* English Name */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.clientNameEn)}{" "}
-                    <span className="text-error-500">*</span>
+                    {t(translations.clientNameEn)}
                   </label>
                   <input
                     type="text"
@@ -1402,8 +1573,7 @@ const ClientForm = ({
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.email)}{" "}
-                    <span className="text-error-500">*</span>
+                    {t(translations.email)}
                   </label>
                   <input
                     type="email"
@@ -1428,8 +1598,7 @@ const ClientForm = ({
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                    {t(translations.phone)}{" "}
-                    <span className="text-error-500">*</span>
+                    {t(translations.phone)}
                   </label>
                   <input
                     type="tel"
@@ -1589,12 +1758,6 @@ const ClientForm = ({
                     <option value="manager">
                       {t({ en: "Manager", ar: "مدير" })}
                     </option>
-                    <option value="admin">
-                      {t({ en: "Admin", ar: "مدير النظام" })}
-                    </option>
-                    <option value="user">
-                      {t({ en: "User", ar: "مستخدم" })}
-                    </option>
                   </select>
                 </div>
               </div>
@@ -1625,6 +1788,24 @@ const ClientForm = ({
             >
               {t(translations.cancel)}
             </button>
+            {currentStage === 2 && !isEditMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  toast.info(
+                    t({
+                      en: "Skipping client creation. You can add client information later.",
+                      ar: "تخطي إنشاء العميل. يمكنك إضافة معلومات العميل لاحقاً.",
+                    })
+                  );
+                  setCurrentStage(3);
+                }}
+                className="btn-secondary"
+                disabled={loading}
+              >
+                {t({ en: "Skip", ar: "تخطي" })}
+              </button>
+            )}
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -1634,8 +1815,19 @@ const ClientForm = ({
                         en: "Updating Tenant...",
                         ar: "جاري تحديث المستأجر...",
                       })
+                    : selectedClientRecord && currentStage === 2
+                    ? t({
+                        en: "Updating Client...",
+                        ar: "جاري تحديث العميل...",
+                      })
                     : t(translations.loading)}
                 </div>
+              ) : initialStage === 2 ? (
+                selectedClientRecord ? (
+                  t({ en: "Update Client", ar: "تحديث العميل" })
+                ) : (
+                  t({ en: "Create Client", ar: "إنشاء العميل" })
+                )
               ) : isEditMode ? (
                 currentStage === 1 ? (
                   t({ en: "Update Tenant", ar: "تحديث المستأجر" })

@@ -25,8 +25,15 @@ import {
   selectTenantsLoading,
   selectManagersList,
   selectManagersLoading,
+  selectClientsList,
+  selectClientsLoading,
 } from "../store/selectors";
-import { fetchTenants, deleteClient, fetchManagers } from "../store/actions";
+import {
+  fetchTenants,
+  deleteClient,
+  fetchManagers,
+  fetchClients,
+} from "../store/actions";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 import Modal from "../components/UI/Modal";
 import ClientForm from "../components/Forms/ClientForm";
@@ -41,11 +48,14 @@ const ClientDetails = () => {
   const loading = useAppSelector(selectTenantsLoading);
   const managers = useAppSelector(selectManagersList);
   const managersLoading = useAppSelector(selectManagersLoading);
+  const clients = useAppSelector(selectClientsList);
+  const clientsLoading = useAppSelector(selectClientsLoading);
   const client = tenants.find((tenant) => tenant.id === parseInt(id));
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState("tenant"); // 'tenant' or 'manager'
+  const [editMode, setEditMode] = useState("tenant"); // 'tenant', 'manager', or 'client'
+  const [selectedClientRecord, setSelectedClientRecord] = useState(null);
 
   useEffect(() => {
     if (!tenants.length) {
@@ -53,10 +63,11 @@ const ClientDetails = () => {
     }
   }, [dispatch, tenants.length]);
 
-  // Fetch managers when client data is available
+  // Fetch managers and clients when client data is available
   useEffect(() => {
     if (client?.subdomain) {
       dispatch(fetchManagers(client.subdomain));
+      dispatch(fetchClients(client.subdomain));
     }
   }, [dispatch, client?.subdomain]);
 
@@ -64,6 +75,7 @@ const ClientDetails = () => {
   const refreshData = () => {
     if (client?.subdomain) {
       dispatch(fetchManagers(client.subdomain));
+      dispatch(fetchClients(client.subdomain));
     }
     dispatch(fetchTenants());
   };
@@ -77,12 +89,33 @@ const ClientDetails = () => {
   // Handle opening edit modal for manager
   const handleEditManager = () => {
     setEditMode("manager");
+    setSelectedClientRecord(null);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle opening edit modal for existing client record
+  const handleEditClientRecord = (clientRecord) => {
+    setEditMode("client");
+    setSelectedClientRecord(clientRecord);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle opening form to create new client record
+  const handleCreateClientRecord = () => {
+    setEditMode("client");
+    setSelectedClientRecord(null);
     setIsEditModalOpen(true);
   };
 
   const handleDelete = async () => {
     try {
-      await dispatch(deleteClient(client.id)).unwrap();
+      // Pass both id and schema (subdomain) for the new API structure
+      await dispatch(
+        deleteClient({
+          id: client.id,
+          schema: client.subdomain,
+        })
+      ).unwrap();
       toast.success(
         t({ en: "Client deleted successfully", ar: "تم حذف العميل بنجاح" })
       );
@@ -267,33 +300,135 @@ const ClientDetails = () => {
         </div>
       </div>
 
-      {/* Main Client Information Card */}
+      {/* Client Records Card */}
+      <div className="card p-6">
+        <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
+          {t({ en: "Client Records", ar: "سجلات العملاء" })}
+        </h2>
+
+        {clientsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : clients.length > 0 ? (
+          <div className="space-y-6">
+            {clients.map((clientRecord, index) => (
+              <div
+                key={clientRecord.id}
+                className="border border-border-light dark:border-border-dark rounded-lg p-4"
+              >
+                {clients.length > 1 && (
+                  <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-3">
+                    {t({ en: `Client ${index + 1}`, ar: `عميل ${index + 1}` })}
+                  </h3>
+                )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Arabic Name", ar: "الاسم العربي" })}
+                      </label>
+                      <p className="text-text-primary-light dark:text-text-primary-dark">
+                        {clientRecord.arabic_name}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "English Name", ar: "الاسم الإنجليزي" })}
+                      </label>
+                      <p className="text-text-primary-light dark:text-text-primary-dark">
+                        {clientRecord.english_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Email", ar: "البريد الإلكتروني" })}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-primary-600" />
+                        <p className="text-text-primary-light dark:text-text-primary-dark">
+                          {clientRecord.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Phone", ar: "الهاتف" })}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-primary-600" />
+                        <p className="text-text-primary-light dark:text-text-primary-dark">
+                          {clientRecord.phone}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Client Actions */}
+                <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({ en: "Client Actions", ar: "إجراءات العميل" })}
+                      </h3>
+                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                        {t({
+                          en: "Manage client information and access",
+                          ar: "إدارة معلومات العميل والوصول",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditClientRecord(clientRecord)}
+                        className="btn-secondary flex items-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        {t({ en: "Edit Client", ar: "تعديل العميل" })}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <User className="w-12 h-12 text-text-muted-light dark:text-text-muted-dark mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+              {t({ en: "No Clients Found", ar: "لم يتم العثور على عملاء" })}
+            </h3>
+            <p className="text-text-secondary-light dark:text-text-secondary-dark mb-4">
+              {t({
+                en: "This tenant doesn't have any clients registered yet.",
+                ar: "هذا المستأجر ليس لديه عملاء مسجلين بعد.",
+              })}
+            </p>
+            <button
+              onClick={handleCreateClientRecord}
+              className="btn-primary flex items-center gap-2 mx-auto"
+            >
+              <User className="w-4 h-4" />
+              {t({ en: "Add Client", ar: "إضافة عميل" })}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Subscription Information Card */}
       <div className="card p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
               {t({
-                en: "Main Client Information",
-                ar: "معلومات العميل الرئيسي",
+                en: "Business Configuration",
+                ar: "إعدادات الأعمال",
               })}
             </h2>
             <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.clientNameAr)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.arabic_name}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
-                  {t(translations.clientNameEn)}
-                </label>
-                <p className="text-text-primary-light dark:text-text-primary-dark">
-                  {client.english_name}
-                </p>
-              </div>
               {client.no_users && (
                 <div>
                   <label className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
@@ -545,10 +680,17 @@ const ClientDetails = () => {
       {/* Edit Modal */}
       <Modal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedClientRecord(null);
+        }}
         title={
           editMode === "manager"
             ? t({ en: "Edit Manager", ar: "تعديل المدير" })
+            : editMode === "client"
+            ? selectedClientRecord
+              ? t({ en: "Edit Client", ar: "تعديل العميل" })
+              : t({ en: "Add Client", ar: "إضافة عميل" })
             : t(translations.editClient)
         }
         size="lg"
@@ -566,11 +708,25 @@ const ClientDetails = () => {
             manager_id: managers[0]?.id || null,
             // Ensure subdomain is always available
             subdomain: client.subdomain,
+            // Add selected client record data for editing
+            ...(selectedClientRecord && {
+              client_arabic_name: selectedClientRecord.arabic_name || "",
+              client_english_name: selectedClientRecord.english_name || "",
+              client_email: selectedClientRecord.email || "",
+              client_phone: selectedClientRecord.phone?.toString() || "",
+              client_id: selectedClientRecord.id,
+            }),
           }}
-          onClose={() => setIsEditModalOpen(false)}
-          isEditMode={true}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedClientRecord(null);
+          }}
+          isEditMode={editMode !== "client" || !!selectedClientRecord}
           onUpdate={refreshData}
-          initialStage={editMode === "manager" ? 3 : 1}
+          initialStage={
+            editMode === "manager" ? 3 : editMode === "client" ? 2 : 1
+          }
+          selectedClientRecord={selectedClientRecord}
         />
       </Modal>
 

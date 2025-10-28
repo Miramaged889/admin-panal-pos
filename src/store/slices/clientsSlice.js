@@ -4,9 +4,10 @@ import api from "../../services/api";
 // Async thunks
 export const fetchClients = createAsyncThunk(
   "clients/fetchClients",
-  async (_, { rejectWithValue }) => {
+  async (schema, { rejectWithValue }) => {
     try {
-      const response = await api.get("/ten/clients/");
+      const url = schema ? `/ten/clients/?schema=${schema}` : "/ten/clients/";
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       return rejectWithValue({
@@ -64,7 +65,8 @@ export const createClient = createAsyncThunk(
   async (clientData, { rejectWithValue }) => {
     try {
       console.log("🚀 Creating client with data:", clientData);
-      const response = await api.post("/ten/clients/", clientData);
+      // Use new endpoint for creating clients
+      const response = await api.post("/ten/addclients/", clientData);
       console.log("✅ Client created successfully:", response.data);
       return response.data;
     } catch (error) {
@@ -104,9 +106,13 @@ export const updateTenant = createAsyncThunk(
 
 export const updateClient = createAsyncThunk(
   "clients/updateClient",
-  async ({ id, clientData }, { rejectWithValue }) => {
+  async ({ id, clientData, schema }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/ten/clients/${id}/`, clientData);
+      // Use new endpoint format for updating clients
+      const url = schema
+        ? `/ten/updateclients/${id}/?schema=${schema}`
+        : `/ten/updateclients/${id}/`;
+      const response = await api.put(url, clientData);
       return response.data;
     } catch (error) {
       return rejectWithValue({
@@ -120,9 +126,13 @@ export const updateClient = createAsyncThunk(
 
 export const deleteClient = createAsyncThunk(
   "clients/deleteClient",
-  async (id, { rejectWithValue }) => {
+  async ({ id, schema }, { rejectWithValue }) => {
     try {
-      await api.delete(`/ten/clients/${id}/`);
+      // Use the same pattern as update for consistency
+      const url = schema
+        ? `/ten/clients/${id}/?schema=${schema}`
+        : `/ten/clients/${id}/`;
+      await api.delete(url);
       return id;
     } catch (error) {
       return rejectWithValue({
@@ -136,9 +146,13 @@ export const deleteClient = createAsyncThunk(
 
 export const getClientById = createAsyncThunk(
   "clients/getClientById",
-  async (id, { rejectWithValue }) => {
+  async ({ id, schema }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/ten/clients/${id}/`);
+      // Use consistent pattern with schema parameter
+      const url = schema
+        ? `/ten/clients/${id}/?schema=${schema}`
+        : `/ten/clients/${id}/`;
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       return rejectWithValue({

@@ -90,7 +90,13 @@ const Clients = () => {
   const handleDeleteClient = async () => {
     if (deletingClient) {
       try {
-        await dispatch(deleteClient(deletingClient.id)).unwrap();
+        // Pass both id and schema (subdomain) for the new API structure
+        await dispatch(
+          deleteClient({
+            id: deletingClient.id,
+            schema: deletingClient.subdomain,
+          })
+        ).unwrap();
         setDeletingClient(null);
         setActiveDropdown(null);
       } catch (error) {
