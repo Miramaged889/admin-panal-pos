@@ -28,6 +28,24 @@ import DatePicker from "../UI/DatePicker";
 import { toast } from "../UI/Toast";
 import { Shield } from "lucide-react";
 
+const formatDate = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultStartDate = () => formatDate(new Date());
+
+const getDefaultEndDate = () => {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 14);
+  return formatDate(endDate);
+};
+
 const ClientForm = ({
   client,
   onClose,
@@ -76,6 +94,7 @@ const ClientForm = ({
       Delivery: true,
     },
     subdomain: "",
+    image: null,
 
     // Stage 2: Client Information
     client_arabic_name: "",
@@ -89,6 +108,9 @@ const ClientForm = ({
     manager_password: "",
     manager_role: "manager", // Default role
   });
+
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoStatus, setLogoStatus] = useState("unchanged");
 
   const [errors, setErrors] = useState({});
   const [currentStage, setCurrentStage] = useState(initialStage); // 1, 2, or 3
@@ -105,8 +127,8 @@ const ClientForm = ({
         Commercial_Record: client.Commercial_Record || "",
         Activity_Type: client.Activity_Type || "cafe",
         otherActivityType: client.otherActivityType || "",
-        Start_Date: client.Start_Date || "",
-        End_Date: client.End_Date || "",
+        Start_Date: client.Start_Date || getDefaultStartDate(),
+        End_Date: client.End_Date || getDefaultEndDate(),
         no_users: client.no_users || "",
         no_branches: client.no_branches || "",
         Subscription_Price: client.Subscription_Price || "",
@@ -120,6 +142,7 @@ const ClientForm = ({
           Delivery: client.modules_enabled?.Delivery ?? true,
         },
         subdomain: client.subdomain || "",
+        image: null,
         client_arabic_name: client.client_arabic_name || "",
         client_english_name: client.client_english_name || "",
         client_email: client.client_email || "",
@@ -129,8 +152,21 @@ const ClientForm = ({
         manager_password: client.manager_password || "",
         manager_role: client.manager_role || "manager",
       });
+      setLogoPreview(client.image || null);
+      setLogoStatus("unchanged");
+    } else {
+      setLogoPreview(null);
+      setLogoStatus("unchanged");
     }
   }, [client]);
+
+  useEffect(() => {
+    return () => {
+      if (logoPreview && logoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
 
   // Update currentStage when initialStage prop changes
   useEffect(() => {
@@ -224,11 +260,23 @@ const ClientForm = ({
       newErrors.End_Date = t(translations.required);
     }
 
-    if (
-      !formData.Subscription_Price ||
-      formData.Subscription_Price === "0.00"
-    ) {
-      newErrors.Subscription_Price = t(translations.required);
+    const priceValue = formData.Subscription_Price?.toString().trim();
+
+    if (!formData.on_trial) {
+      if (!priceValue || priceValue === "0.00") {
+        newErrors.Subscription_Price = t(translations.required);
+      } else if (Number.isNaN(Number(priceValue))) {
+        newErrors.Subscription_Price = t(translations.invalidNumber);
+      } else if (Number(priceValue) <= 0) {
+        newErrors.Subscription_Price = t({
+          en: "Subscription price must be greater than zero",
+          ar: "سعر الاشتراك يجب أن يكون أكبر من صفر",
+        });
+      }
+    } else if (priceValue) {
+      if (Number.isNaN(Number(priceValue))) {
+        newErrors.Subscription_Price = t(translations.invalidNumber);
+      }
     }
 
     if (formData.Start_Date && formData.End_Date) {
@@ -259,10 +307,6 @@ const ClientForm = ({
         en: "Number of branches must be at least 1",
         ar: "عدد الفروع يجب أن يكون 1 على الأقل",
       });
-    }
-
-    if (formData.Subscription_Price && isNaN(formData.Subscription_Price)) {
-      newErrors.Subscription_Price = t(translations.invalidNumber);
     }
 
     setErrors(newErrors);
@@ -318,6 +362,7 @@ const ClientForm = ({
         // In edit mode, update tenant data and move to next stage
         if (isEditMode) {
           try {
+            const imageValue = resolveImageValue(true);
             const tenantData = {
               id: client.id,
               arabic_name: formData.arabic_name.trim(),
@@ -351,8 +396,11 @@ const ClientForm = ({
                   ? client.is_active
                   : true,
               Start_Date:
-                formData.Start_Date || client.Start_Date || "2025-08-01",
-              End_Date: formData.End_Date || client.End_Date || "2030-01-01",
+                formData.Start_Date ||
+                client.Start_Date ||
+                getDefaultStartDate(),
+              End_Date:
+                formData.End_Date || client.End_Date || getDefaultEndDate(),
               modules_enabled: {
                 kitchen:
                   formData.modules_enabled?.kitchen !== undefined
@@ -364,11 +412,13 @@ const ClientForm = ({
                     : client.modules_enabled?.Delivery ?? true,
               },
               subdomain: formData.subdomain.trim() || client.subdomain || "",
-              image: null,
+              ...(imageValue !== undefined ? { image: imageValue } : {}),
             };
 
+            const tenantPayload = prepareTenantPayload(tenantData);
+
             await dispatch(
-              updateTenant({ id: client.id, tenantData })
+              updateTenant({ id: client.id, tenantData: tenantPayload })
             ).unwrap();
 
             // Show success message
@@ -421,6 +471,7 @@ const ClientForm = ({
         if (!isEditMode) {
           // Submit tenant data to /ten/tenants/ (CREATE mode only)
           try {
+            const imageValue = resolveImageValue(false);
             const tenantData = {
               id: 1, // API expects this field
               arabic_name: formData.arabic_name.trim(),
@@ -440,17 +491,19 @@ const ClientForm = ({
               Currency: formData.Currency,
               on_trial: formData.on_trial,
               is_active: formData.is_active,
-              Start_Date: formData.Start_Date || "2025-08-01",
-              End_Date: formData.End_Date || "2030-01-01",
+              Start_Date: formData.Start_Date || getDefaultStartDate(),
+              End_Date: formData.End_Date || getDefaultEndDate(),
               modules_enabled: {
                 kitchen: formData.modules_enabled.kitchen,
                 Delivery: formData.modules_enabled.Delivery,
               },
               subdomain: formData.subdomain.trim(),
-              image: null, // API expects this field
+              ...(imageValue !== undefined ? { image: imageValue } : {}),
             };
 
-            const result = await dispatch(createTenant(tenantData)).unwrap();
+            const tenantPayload = prepareTenantPayload(tenantData);
+
+            const result = await dispatch(createTenant(tenantPayload)).unwrap();
             setSubmittedData((prev) => ({ ...prev, tenant: result }));
             setCurrentStage(2);
           } catch (error) {
@@ -521,18 +574,18 @@ const ClientForm = ({
           // Update existing client record
           try {
             const clientData = {
+              tenant: client.id,
               arabic_name: formData.client_arabic_name.trim(),
               english_name: formData.client_english_name.trim(),
               email: formData.client_email.trim(),
               phone: parseInt(formData.client_phone.trim()) || 0,
-              schema: client.subdomain,
             };
 
             await dispatch(
               updateClient({
                 id: selectedClientRecord.id,
                 clientData,
-                schema: client.subdomain,
+                tenantId: client.id,
               })
             ).unwrap();
 
@@ -662,7 +715,7 @@ const ClientForm = ({
               email: formData.client_email.trim(),
               phone: parseInt(formData.client_phone.trim()) || 0, // Convert to number as per schema
               schema:
-                submittedData.tenant.subdomain || formData.subdomain.trim(), // Include schema (subdomain)
+                submittedData.tenant.subdomain || formData.subdomain.trim(),
             };
 
             const result = await dispatch(createClient(clientData)).unwrap();
@@ -741,6 +794,7 @@ const ClientForm = ({
     try {
       if (isEditMode) {
         // Always update tenant data in edit mode, regardless of current stage
+        const imageValue = resolveImageValue(true);
         const tenantData = {
           id: client.id,
           arabic_name: formData.arabic_name.trim(),
@@ -773,8 +827,9 @@ const ClientForm = ({
               : client.is_active !== undefined
               ? client.is_active
               : true,
-          Start_Date: formData.Start_Date || client.Start_Date || "2025-08-01",
-          End_Date: formData.End_Date || client.End_Date || "2030-01-01",
+          Start_Date:
+            formData.Start_Date || client.Start_Date || getDefaultStartDate(),
+          End_Date: formData.End_Date || client.End_Date || getDefaultEndDate(),
           modules_enabled: {
             kitchen:
               formData.modules_enabled?.kitchen !== undefined
@@ -786,10 +841,14 @@ const ClientForm = ({
                 : client.modules_enabled?.Delivery ?? true,
           },
           subdomain: formData.subdomain.trim() || client.subdomain || "",
-          image: null,
+          ...(imageValue !== undefined ? { image: imageValue } : {}),
         };
 
-        await dispatch(updateTenant({ id: client.id, tenantData })).unwrap();
+        const tenantPayload = prepareTenantPayload(tenantData);
+
+        await dispatch(
+          updateTenant({ id: client.id, tenantData: tenantPayload })
+        ).unwrap();
 
         // Handle manager creation/update if there's manager data
         if (
@@ -987,6 +1046,86 @@ const ClientForm = ({
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleLogoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(
+        t({
+          en: "File is too large. Maximum size is 5MB.",
+          ar: "الملف كبير جداً. الحد الأقصى 5 ميجابايت.",
+        })
+      );
+      event.target.value = "";
+      return;
+    }
+
+    if (logoPreview && logoPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreview);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setFormData((prev) => ({ ...prev, image: file }));
+    setLogoPreview(previewUrl);
+    setLogoStatus("updated");
+    event.target.value = "";
+  };
+
+  const handleLogoRemove = () => {
+    if (logoPreview && logoPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreview);
+    }
+
+    setLogoPreview(null);
+    setFormData((prev) => ({ ...prev, image: null }));
+    setLogoStatus("removed");
+  };
+
+  const resolveImageValue = (isEditing) => {
+    if (logoStatus === "updated") {
+      return formData.image;
+    }
+    if (logoStatus === "removed") {
+      return null;
+    }
+    return isEditing ? undefined : null;
+  };
+
+  const prepareTenantPayload = (data) => {
+    const payload = { ...data };
+    const hasFile = payload.image instanceof File;
+
+    if (hasFile) {
+      const formPayload = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value === undefined) {
+          return;
+        }
+        if (value instanceof File) {
+          formPayload.append(key, value);
+        } else if (value === null) {
+          if (key !== "image") {
+            formPayload.append(key, "");
+          }
+        } else if (typeof value === "object") {
+          formPayload.append(key, JSON.stringify(value));
+        } else {
+          formPayload.append(key, value);
+        }
+      });
+      return formPayload;
+    }
+
+    if (payload.image === undefined) {
+      delete payload.image;
+    }
+
+    return payload;
   };
 
   const handleModuleChange = (module) => {
@@ -1263,6 +1402,62 @@ const ClientForm = ({
                     )}
                   </div>
                 )}
+
+                {/* Company Logo */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
+                    {t({ en: "Company Logo", ar: "شعار الشركة" })}
+                  </label>
+                  <div className="flex items-start gap-4">
+                    <div className="w-20 h-20 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark flex items-center justify-center overflow-hidden">
+                      {logoPreview ? (
+                        <img
+                          src={logoPreview}
+                          alt={t({ en: "Company logo", ar: "شعار الشركة" })}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark text-center px-2">
+                          {t({ en: "No logo", ar: "لا يوجد شعار" })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label
+                          htmlFor="company_logo"
+                          className="btn-secondary cursor-pointer"
+                        >
+                          {logoPreview
+                            ? t({ en: "Change Logo", ar: "تغيير الشعار" })
+                            : t({ en: "Upload Logo", ar: "رفع الشعار" })}
+                        </label>
+                        <input
+                          id="company_logo"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          className="hidden"
+                        />
+                        {logoPreview && (
+                          <button
+                            type="button"
+                            onClick={handleLogoRemove}
+                            className="btn-secondary"
+                          >
+                            {t({ en: "Remove", ar: "إزالة" })}
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                        {t({
+                          en: "Supported formats: JPG, PNG, SVG. Max 5MB.",
+                          ar: "الصيغ المدعومة: JPG و PNG و SVG. الحد الأقصى 5 ميجابايت.",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1330,7 +1525,9 @@ const ClientForm = ({
                 <div>
                   <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
                     {t({ en: "Subscription Price", ar: "سعر الاشتراك" })}{" "}
-                    <span className="text-error-500">*</span>
+                    {!formData.on_trial && (
+                      <span className="text-error-500">*</span>
+                    )}
                   </label>
                   <input
                     type="number"
@@ -1343,9 +1540,17 @@ const ClientForm = ({
                         : ""
                     }`}
                     placeholder="0.00"
-                    min="0"
+                    min={formData.on_trial ? "0" : "0.01"}
                     step="0.01"
                   />
+                  {formData.on_trial && (
+                    <p className="mt-1 text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                      {t({
+                        en: "Price is optional during free trial.",
+                        ar: "السعر اختياري أثناء الفترة التجريبية.",
+                      })}
+                    </p>
+                  )}
                   {errors.Subscription_Price && (
                     <p className="mt-1 text-sm text-error-600 dark:text-error-400">
                       {errors.Subscription_Price}
@@ -1400,12 +1605,30 @@ const ClientForm = ({
                     type="checkbox"
                     id="on_trial"
                     checked={formData.on_trial}
-                    onChange={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        on_trial: !prev.on_trial,
-                      }))
-                    }
+                    onChange={() => {
+                      setFormData((prev) => {
+                        const nextOnTrial = !prev.on_trial;
+                        const updatedForm = {
+                          ...prev,
+                          on_trial: nextOnTrial,
+                        };
+
+                        if (nextOnTrial) {
+                          updatedForm.Start_Date = getDefaultStartDate();
+                          updatedForm.End_Date = getDefaultEndDate();
+                          updatedForm.Subscription_Price = "";
+                        }
+
+                        return updatedForm;
+                      });
+
+                      if (errors.Subscription_Price) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          Subscription_Price: "",
+                        }));
+                      }
+                    }}
                     className="w-4 h-4 text-primary-600 bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark rounded focus:ring-primary-500 focus:ring-2"
                   />
                   <label

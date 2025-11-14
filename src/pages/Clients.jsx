@@ -90,11 +90,11 @@ const Clients = () => {
   const handleDeleteClient = async () => {
     if (deletingClient) {
       try {
-        // Pass both id and schema (subdomain) for the new API structure
+        // Pass tenant context required by the new client API
         await dispatch(
           deleteClient({
             id: deletingClient.id,
-            schema: deletingClient.subdomain,
+            tenantId: deletingClient.id,
           })
         ).unwrap();
         setDeletingClient(null);

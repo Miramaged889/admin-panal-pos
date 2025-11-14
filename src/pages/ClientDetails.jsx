@@ -67,15 +67,15 @@ const ClientDetails = () => {
   useEffect(() => {
     if (client?.subdomain) {
       dispatch(fetchManagers(client.subdomain));
-      dispatch(fetchClients(client.subdomain));
+      dispatch(fetchClients({ tenantId: client.id }));
     }
-  }, [dispatch, client?.subdomain]);
+  }, [dispatch, client?.subdomain, client?.id]);
 
   // Refresh data after updates
   const refreshData = () => {
     if (client?.subdomain) {
       dispatch(fetchManagers(client.subdomain));
-      dispatch(fetchClients(client.subdomain));
+      dispatch(fetchClients({ tenantId: client.id }));
     }
     dispatch(fetchTenants());
   };
@@ -109,11 +109,11 @@ const ClientDetails = () => {
 
   const handleDelete = async () => {
     try {
-      // Pass both id and schema (subdomain) for the new API structure
+      // Pass tenant context required by the new client API
       await dispatch(
         deleteClient({
           id: client.id,
-          schema: client.subdomain,
+          tenantId: client.id,
         })
       ).unwrap();
       toast.success(
@@ -228,6 +228,35 @@ const ClientDetails = () => {
         <h2 className="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark mb-4">
           {t({ en: "Company Information", ar: "معلومات الشركة" })}
         </h2>
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-20 h-20 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark flex items-center justify-center overflow-hidden">
+            {client.image ? (
+              <img
+                src={client.image}
+                alt={t({ en: "Company logo", ar: "شعار الشركة" })}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Building className="w-10 h-10 text-text-muted-light dark:text-text-muted-dark" />
+            )}
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+              {t({ en: "Company Logo", ar: "شعار الشركة" })}
+            </p>
+            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+              {client.image
+                ? t({
+                    en: "Brand assets are up to date",
+                    ar: "مواد العلامة التجارية محدثة",
+                  })
+                : t({
+                    en: "No logo uploaded yet",
+                    ar: "لم يتم رفع شعار بعد",
+                  })}
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-3">
             <div>

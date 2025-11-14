@@ -33,7 +33,12 @@ export const createStore = () => {
             "persist/FLUSH",
           ],
           // Ignore these field paths in all actions
-          ignoredActionPaths: ["payload.timestamp", "meta.arg.timestamp"],
+          ignoredActionPaths: [
+            "payload.timestamp",
+            "meta.arg.timestamp",
+            "meta.arg.tenantData",
+            "meta.arg.clientData",
+          ],
           // Ignore these paths in the state
           ignoredPaths: ["auth.user.timestamp"],
         },
