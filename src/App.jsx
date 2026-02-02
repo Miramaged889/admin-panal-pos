@@ -23,6 +23,8 @@ import ClientDetails from "./pages/ClientDetails";
 import SubscriptionExpired from "./pages/SubscriptionExpired";
 import Settings from "./pages/Settings";
 import ContactUs from "./pages/ContactUs";
+import MeasureUnits from "./pages/MeasureUnits";
+import Currencies from "./pages/Currencies";
 
 // Loading Component
 const LoadingScreen = () => (
@@ -96,6 +98,8 @@ function App() {
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="clients" element={<Clients />} />
                   <Route path="clients/:id" element={<ClientDetails />} />
+                  <Route path="measure-units" element={<MeasureUnits />} />
+                  <Route path="currencies" element={<Currencies />} />
                   <Route path="contact" element={<ContactUs />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>

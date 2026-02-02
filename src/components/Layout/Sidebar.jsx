@@ -12,6 +12,8 @@ import {
   Sun,
   Globe,
   MessageSquare,
+  Ruler,
+  DollarSign,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -41,6 +43,18 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       active:
         location.pathname === "/clients" ||
         location.pathname.startsWith("/clients/"),
+    },
+    {
+      icon: Ruler,
+      label: t({ en: "Measure Units", ar: "وحدات القياس" }),
+      path: "/measure-units",
+      active: location.pathname === "/measure-units",
+    },
+    {
+      icon: DollarSign,
+      label: t({ en: "Currencies", ar: "العملات" }),
+      path: "/currencies",
+      active: location.pathname === "/currencies",
     },
     {
       icon: MessageSquare,

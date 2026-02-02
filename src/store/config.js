@@ -4,6 +4,8 @@ import clientsReducer from "./slices/clientsSlice";
 import saasUsersReducer from "./slices/saasUsersSlice";
 import tenantUsersReducer from "./slices/tenantUsersSlice";
 import managersReducer from "./slices/managersSlice";
+import measureUnitsReducer from "./slices/measureUnitsSlice";
+import currenciesReducer from "./slices/currenciesSlice";
 import {
   loggerMiddleware,
   errorMiddleware,
@@ -19,6 +21,8 @@ export const createStore = () => {
       saasUsers: saasUsersReducer,
       tenantUsers: tenantUsersReducer,
       managers: managersReducer,
+      measureUnits: measureUnitsReducer,
+      currencies: currenciesReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({

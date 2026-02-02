@@ -27,12 +27,14 @@ import {
   selectManagersLoading,
   selectClientsList,
   selectClientsLoading,
+  selectCurrenciesList,
 } from "../store/selectors";
 import {
   fetchTenants,
   deleteClient,
   fetchManagers,
   fetchClients,
+  fetchCurrencies,
 } from "../store/actions";
 import SubscriptionStatus from "../components/UI/SubscriptionStatus";
 import Modal from "../components/UI/Modal";
@@ -50,7 +52,22 @@ const ClientDetails = () => {
   const managersLoading = useAppSelector(selectManagersLoading);
   const clients = useAppSelector(selectClientsList);
   const clientsLoading = useAppSelector(selectClientsLoading);
+  const currencies = useAppSelector(selectCurrenciesList);
   const client = tenants.find((tenant) => tenant.id === parseInt(id));
+
+  // Helper function to normalize currency value (handle both string and object)
+  const normalizeCurrency = (currency) => {
+    if (!currency) return null;
+    if (typeof currency === "string") return currency;
+    if (typeof currency === "object" && currency.code) return currency.code;
+    return null;
+  };
+
+  // Find the selected currency
+  const currencyCode = normalizeCurrency(client?.Currency);
+  const selectedCurrency = currencyCode
+    ? currencies.find((currency) => currency.code === currencyCode)
+    : null;
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -62,6 +79,11 @@ const ClientDetails = () => {
       dispatch(fetchTenants());
     }
   }, [dispatch, tenants.length]);
+
+  // Fetch currencies on component mount
+  useEffect(() => {
+    dispatch(fetchCurrencies());
+  }, [dispatch]);
 
   // Fetch managers and clients when client data is available
   useEffect(() => {
@@ -161,27 +183,26 @@ const ClientDetails = () => {
 
   const isExpired = new Date() > new Date(client.End_Date);
 
-  const formatCurrency = (amount, currency) => {
+  // Format price based on language: code for English, symbol for Arabic
+  const formatPrice = (amount, currency) => {
     if (!amount) return "0.00";
-
-    const currencyMap = {
-      SAR: { locale: "ar-SA", symbol: "ر.س" },
-      USD: { locale: "en-US", symbol: "$" },
-      EUR: { locale: "de-DE", symbol: "€" },
-    };
-
-    const currencyInfo = currencyMap[currency] || currencyMap.SAR;
-
-    try {
-      return new Intl.NumberFormat(currencyInfo.locale, {
-        style: "currency",
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amount);
-    } catch {
-      // Fallback formatting
-      return `${currencyInfo.symbol}${parseFloat(amount).toFixed(2)}`;
+    
+    const price = parseFloat(amount).toFixed(2);
+    
+    if (isRTL) {
+      // Arabic: show symbol
+      if (currency?.symbol) {
+        return `${price} ${currency.symbol}`;
+      }
+      // Fallback if no symbol
+      return `${price} ${currency?.code || normalizeCurrency(client?.Currency) || "SAR"}`;
+    } else {
+      // English: show code
+      if (currency?.code) {
+        return `${price} ${currency.code}`;
+      }
+      // Fallback if no code
+      return `${price} ${normalizeCurrency(client?.Currency) || "SAR"}`;
     }
   };
 
@@ -500,13 +521,30 @@ const ClientDetails = () => {
                 </div>
               )}
 
+              {/* Currency */}
+              {client.Currency && (
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                    {t({ en: "Currency", ar: "العملة" })}:{" "}
+                    <span className="font-medium text-text-primary-light dark:text-text-primary-dark">
+                      {selectedCurrency
+                        ? `${selectedCurrency.name} (${selectedCurrency.code})`
+                        : normalizeCurrency(client.Currency) || client.Currency}
+                    </span>
+                  </span>
+                </div>
+              )}
+
               {/* Subscription Price */}
               {client.Subscription_Price && (
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-primary-600" />
                   <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
                     {t({ en: "Price", ar: "السعر" })}:{" "}
-                    {formatCurrency(client.Subscription_Price, client.Currency)}
+                    <span className="font-medium text-text-primary-light dark:text-text-primary-dark">
+                      {formatPrice(client.Subscription_Price, selectedCurrency)}
+                    </span>
                   </span>
                 </div>
               )}

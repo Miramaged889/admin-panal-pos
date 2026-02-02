@@ -57,16 +57,8 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email) {
-      newErrors.email = t(translations.required);
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = t(translations.invalidEmail);
-    }
-
-    if (!formData.password) {
-      newErrors.password = t(translations.required);
-    } else if (formData.password.length < 6) {
-      newErrors.password = t(translations.passwordTooShort);
     }
 
     setErrors(newErrors);
@@ -85,9 +77,7 @@ const Login = () => {
       );
       navigate("/dashboard");
     } catch (error) {
-      toast.error(
-        t({ en: "Login failed!", ar: "فشل تسجيل الدخول!" })
-      );
+      toast.error(t({ en: "Login failed!", ar: "فشل تسجيل الدخول!" }));
       console.error("Login failed:", error);
     }
   };

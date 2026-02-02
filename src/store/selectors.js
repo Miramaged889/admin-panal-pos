@@ -90,3 +90,29 @@ export const selectManagerById = createSelector(
   [selectManagersList, (state, managerId) => managerId],
   (managers, managerId) => managers.find((manager) => manager.id === managerId)
 );
+
+// Measure Units selectors
+export const selectMeasureUnits = (state) => state.measureUnits;
+export const selectMeasureUnitsList = (state) => state.measureUnits.measureUnits;
+export const selectMeasureUnitsLoading = (state) => state.measureUnits.loading;
+export const selectMeasureUnitsError = (state) => state.measureUnits.error;
+export const selectMeasureUnitsSuccess = (state) => state.measureUnits.success;
+
+// Measure Unit by ID selector with memoization
+export const selectMeasureUnitById = createSelector(
+  [selectMeasureUnitsList, (state, unitId) => unitId],
+  (units, unitId) => units.find((unit) => unit.id === unitId)
+);
+
+// Currencies selectors
+export const selectCurrencies = (state) => state.currencies;
+export const selectCurrenciesList = (state) => state.currencies.currencies;
+export const selectCurrenciesLoading = (state) => state.currencies.loading;
+export const selectCurrenciesError = (state) => state.currencies.error;
+export const selectCurrenciesSuccess = (state) => state.currencies.success;
+
+// Currency by ID selector with memoization
+export const selectCurrencyById = createSelector(
+  [selectCurrenciesList, (state, currencyId) => currencyId],
+  (currencies, currencyId) => currencies.find((currency) => currency.id === currencyId)
+);

@@ -9,6 +9,7 @@ import {
   selectTenantUsersLoading,
   selectTenantUsersError,
   selectTenantUsersSuccess,
+  selectCurrenciesList,
 } from "../../store/selectors";
 import {
   createTenant,
@@ -19,6 +20,7 @@ import {
   clearClientsSuccess,
   clearTenantUsersError,
   clearTenantUsersSuccess,
+  fetchCurrencies,
 } from "../../store/actions";
 import {
   createManager,
@@ -46,6 +48,23 @@ const getDefaultEndDate = () => {
   return formatDate(endDate);
 };
 
+// Helper function to normalize currency value (handle both string and object)
+const normalizeCurrency = (currency) => {
+  if (!currency) return "SAR";
+  if (typeof currency === "string") return currency;
+  if (typeof currency === "object" && currency.code) return currency.code;
+  return "SAR";
+};
+
+// Helper function to get currency_id from currency code
+const getCurrencyId = (currencyCode, currencies) => {
+  if (!currencyCode || !currencies || currencies.length === 0) return null;
+  const currency = currencies.find(
+    (c) => c.code === currencyCode && c.is_active
+  );
+  return currency ? currency.id : null;
+};
+
 const ClientForm = ({
   client,
   onClose,
@@ -61,6 +80,9 @@ const ClientForm = ({
   const clientsLoading = useAppSelector(selectClientsLoading);
   const tenantUsersLoading = useAppSelector(selectTenantUsersLoading);
   const loading = clientsLoading || tenantUsersLoading;
+
+  // Currencies
+  const currencies = useAppSelector(selectCurrenciesList);
 
   // Error states
   const clientsError = useAppSelector(selectClientsError);
@@ -121,6 +143,15 @@ const ClientForm = ({
 
   useEffect(() => {
     if (client) {
+      // Handle currency: if currency_id exists, find the code; otherwise use Currency
+      let currencyCode = normalizeCurrency(client.Currency);
+      if (client.currency_id && currencies.length > 0) {
+        const currency = currencies.find((c) => c.id === client.currency_id);
+        if (currency) {
+          currencyCode = currency.code;
+        }
+      }
+
       setFormData({
         arabic_name: client.arabic_name || "",
         english_name: client.english_name || "",
@@ -132,7 +163,7 @@ const ClientForm = ({
         no_users: client.no_users || "",
         no_branches: client.no_branches || "",
         Subscription_Price: client.Subscription_Price || "",
-        Currency: client.Currency || "SAR",
+        Currency: currencyCode,
         on_trial: client.on_trial || false,
         is_active: client.is_active !== undefined ? client.is_active : true,
         modules_enabled: {
@@ -158,7 +189,7 @@ const ClientForm = ({
       setLogoPreview(null);
       setLogoStatus("unchanged");
     }
-  }, [client]);
+  }, [client, currencies]);
 
   useEffect(() => {
     return () => {
@@ -172,6 +203,11 @@ const ClientForm = ({
   useEffect(() => {
     setCurrentStage(initialStage);
   }, [initialStage]);
+
+  // Fetch currencies on component mount
+  useEffect(() => {
+    dispatch(fetchCurrencies());
+  }, [dispatch]);
 
   // Handle success messages
   useEffect(() => {
@@ -363,6 +399,11 @@ const ClientForm = ({
         if (isEditMode) {
           try {
             const imageValue = resolveImageValue(true);
+            const currencyCode = normalizeCurrency(
+              formData.Currency || client.Currency
+            );
+            const currencyId = getCurrencyId(currencyCode, currencies);
+
             const tenantData = {
               id: client.id,
               arabic_name: formData.arabic_name.trim(),
@@ -384,7 +425,7 @@ const ClientForm = ({
                 formData.Subscription_Price ||
                 client.Subscription_Price ||
                 "767.23",
-              Currency: formData.Currency || client.Currency || "SAR",
+              ...(currencyId ? { currency_id: currencyId } : {}),
               on_trial:
                 formData.on_trial !== undefined
                   ? formData.on_trial
@@ -472,6 +513,9 @@ const ClientForm = ({
           // Submit tenant data to /ten/tenants/ (CREATE mode only)
           try {
             const imageValue = resolveImageValue(false);
+            const currencyCode = normalizeCurrency(formData.Currency);
+            const currencyId = getCurrencyId(currencyCode, currencies);
+
             const tenantData = {
               id: 1, // API expects this field
               arabic_name: formData.arabic_name.trim(),
@@ -488,7 +532,7 @@ const ClientForm = ({
                 ? parseInt(formData.no_branches)
                 : 1,
               Subscription_Price: formData.Subscription_Price || "767.23",
-              Currency: formData.Currency,
+              ...(currencyId ? { currency_id: currencyId } : {}),
               on_trial: formData.on_trial,
               is_active: formData.is_active,
               Start_Date: formData.Start_Date || getDefaultStartDate(),
@@ -795,6 +839,11 @@ const ClientForm = ({
       if (isEditMode) {
         // Always update tenant data in edit mode, regardless of current stage
         const imageValue = resolveImageValue(true);
+        const currencyCode = normalizeCurrency(
+          formData.Currency || client.Currency
+        );
+        const currencyId = getCurrencyId(currencyCode, currencies);
+
         const tenantData = {
           id: client.id,
           arabic_name: formData.arabic_name.trim(),
@@ -816,7 +865,7 @@ const ClientForm = ({
             formData.Subscription_Price ||
             client.Subscription_Price ||
             "767.23",
-          Currency: formData.Currency || client.Currency || "SAR",
+          ...(currencyId ? { currency_id: currencyId } : {}),
           on_trial:
             formData.on_trial !== undefined
               ? formData.on_trial
@@ -1565,37 +1614,43 @@ const ClientForm = ({
                   </label>
                   <select
                     name="Currency"
-                    value={formData.Currency}
+                    value={normalizeCurrency(formData.Currency)}
                     onChange={handleChange}
                     className="input-field"
                   >
-                    <option value="SAR">
-                      {t({
-                        en: "Saudi Riyal (SAR)",
-                        ar: "الريال السعودي (SAR)",
-                      })}
-                    </option>
-                    <option value="USD">
-                      {t({
-                        en: "US Dollar (USD)",
-                        ar: "الدولار الأمريكي (USD)",
-                      })}
-                    </option>
-                    <option value="EUR">
-                      {t({ en: "Euro (EUR)", ar: "اليورو (EUR)" })}
-                    </option>
-                    <option value="EGP">
-                      {t({
-                        en: "Egyptian Pound (EGP)",
-                        ar: "الجنية المصري (EGP)",
-                      })}
-                    </option>
-                    <option value="KWD">
-                      {t({
-                        en: "Kuwaiti Dinar (KWD)",
-                        ar: "الدينار الكويتي (KWD)",
-                      })}
-                    </option>
+                    {currencies.length > 0 ? (
+                      <>
+                        {/* Show current value if it's not in active currencies */}
+                        {(() => {
+                          const normalizedCurrency = normalizeCurrency(
+                            formData.Currency
+                          );
+                          return (
+                            normalizedCurrency &&
+                            !currencies.some(
+                              (c) =>
+                                c.code === normalizedCurrency && c.is_active
+                            ) && (
+                              <option value={normalizedCurrency}>
+                                {normalizedCurrency}
+                              </option>
+                            )
+                          );
+                        })()}
+                        {/* Show active currencies */}
+                        {currencies
+                          .filter((currency) => currency.is_active)
+                          .map((currency) => (
+                            <option key={currency.id} value={currency.code}>
+                              {currency.name} ({currency.code})
+                            </option>
+                          ))}
+                      </>
+                    ) : (
+                      <option value={normalizeCurrency(formData.Currency)}>
+                        {normalizeCurrency(formData.Currency)}
+                      </option>
+                    )}
                   </select>
                 </div>
 
