@@ -183,7 +183,7 @@ const Dashboard = () => {
             </h2>
           </div>
           <div className="space-y-4">
-            {safeTenants.slice(0, 5).map((tenant) => (
+            {safeTenants.slice(0, 3).map((tenant) => (
               <div
                 key={tenant.id}
                 className="flex items-center justify-between"

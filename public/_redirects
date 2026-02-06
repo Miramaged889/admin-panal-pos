@@ -1,3 +1,4 @@
 /api/* https://detalls-sa.com/api/:splat 200
 /ten/* https://detalls-sa.com/ten/:splat 200
 /tenuser/* https://detalls-sa.com/tenuser/:splat 200
+/*    /index.html   200
