@@ -35,6 +35,12 @@ export const createStore = () => {
             "persist/PURGE",
             "persist/REGISTER",
             "persist/FLUSH",
+            "clients/createTenant/pending",
+            "clients/createTenant/fulfilled",
+            "clients/createTenant/rejected",
+            "clients/updateTenant/pending",
+            "clients/updateTenant/fulfilled",
+            "clients/updateTenant/rejected",
           ],
           // Ignore these field paths in all actions
           ignoredActionPaths: [
@@ -42,6 +48,7 @@ export const createStore = () => {
             "meta.arg.timestamp",
             "meta.arg.tenantData",
             "meta.arg.clientData",
+            "meta.arg", // Ignore FormData in meta.arg
           ],
           // Ignore these paths in the state
           ignoredPaths: ["auth.user.timestamp"],

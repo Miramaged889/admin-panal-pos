@@ -65,6 +65,23 @@ const getCurrencyId = (currencyCode, currencies) => {
   return currency ? currency.id : null;
 };
 
+// Helper function to get currency object from currency code
+const getCurrencyObject = (currencyCode, currencies) => {
+  if (!currencyCode || !currencies || currencies.length === 0) return null;
+  const currency = currencies.find(
+    (c) => c.code === currencyCode && c.is_active
+  );
+  return currency
+    ? {
+        id: currency.id,
+        code: currency.code,
+        name: currency.name,
+        symbol: currency.symbol,
+        is_active: currency.is_active,
+      }
+    : null;
+};
+
 const ClientForm = ({
   client,
   onClose,
@@ -514,7 +531,7 @@ const ClientForm = ({
           try {
             const imageValue = resolveImageValue(false);
             const currencyCode = normalizeCurrency(formData.Currency);
-            const currencyId = getCurrencyId(currencyCode, currencies);
+            const currencyObj = getCurrencyObject(currencyCode, currencies);
 
             const tenantData = {
               id: 1, // API expects this field
@@ -532,7 +549,7 @@ const ClientForm = ({
                 ? parseInt(formData.no_branches)
                 : 1,
               Subscription_Price: formData.Subscription_Price || "767.23",
-              ...(currencyId ? { currency_id: currencyId } : {}),
+              ...(currencyObj ? { Currency: currencyObj } : {}),
               on_trial: formData.on_trial,
               is_active: formData.is_active,
               Start_Date: formData.Start_Date || getDefaultStartDate(),
