@@ -76,6 +76,44 @@ export const getCurrentUser = createAsyncThunk(
   }
 );
 
+export const refreshToken = createAsyncThunk(
+  "auth/refreshToken",
+  async (_, { rejectWithValue }) => {
+    try {
+      const refreshToken = localStorage.getItem("refresh_token");
+      
+      if (!refreshToken) {
+        return rejectWithValue({
+          message: "No refresh token available",
+          status: 401,
+          data: null,
+        });
+      }
+
+      const response = await api.post("/api/token/refresh/", {
+        refresh: refreshToken,
+      });
+
+      const { access } = response.data;
+
+      // Update the access token in localStorage
+      localStorage.setItem("access_token", access);
+
+      return { access };
+    } catch (error) {
+      // Clear tokens on refresh failure
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+
+      return rejectWithValue({
+        message: error.response?.data?.message || "Token refresh failed",
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  }
+);
+
 export const initializeAuth = createAsyncThunk(
   "auth/initializeAuth",
   async (_, { dispatch, getState, rejectWithValue }) => {
@@ -187,7 +225,6 @@ const authSlice = createSlice({
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        state.isAuthenticated = false;
       })
       // Initialize auth
       .addCase(initializeAuth.pending, (state) => {
@@ -202,6 +239,21 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(initializeAuth.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
+      })
+      // Refresh token
+      .addCase(refreshToken.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(refreshToken.fulfilled, (state) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.isAuthenticated = false;

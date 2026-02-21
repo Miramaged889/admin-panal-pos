@@ -5,6 +5,7 @@ export {
   logoutSaaSAdmin,
   getCurrentUser,
   initializeAuth,
+  refreshToken,
   clearError as clearAuthError,
   logout as logoutAction,
 } from "./slices/authSlice";

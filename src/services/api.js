@@ -10,6 +10,22 @@ const api = axios.create({
   withCredentials: false,
 });
 
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
 // Request interceptor to add auth token and debugging
 api.interceptors.request.use(
   (config) => {
@@ -30,12 +46,14 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for debugging
+// Response interceptor for token refresh and debugging
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     console.error("❌ API Response Error:", {
       message: error.message,
       code: error.code,
@@ -48,6 +66,77 @@ api.interceptors.response.use(
       isTimeout: error.code === "ECONNABORTED",
       isNetwork: !error.response && !error.request,
     });
+
+    // If error is 401 and we haven't tried to refresh yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      if (!refreshToken) {
+        // No refresh token available, logout user
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      try {
+        // Attempt to refresh the token
+        const response = await axios.post(
+          "https://posback.shop/token/refresh/",
+          { refresh: refreshToken },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const { access } = response.data;
+
+        // Update the access token
+        localStorage.setItem("access_token", access);
+
+        // Update authorization header
+        api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+
+        // Process queued requests
+        processQueue(null, access);
+
+        isRefreshing = false;
+
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        window.location.href = "/login";
+
+        return Promise.reject(refreshError);
+      }
+    }
+
     return Promise.reject(error);
   }
 );
